@@ -1,0 +1,6 @@
+{
+  "name": "Backgammon (Takhte Nard)",
+  "description": "Professional mobile online multiplayer Backgammon with modern 3D board graphics, AI opponents, level progression, and coin matches.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
