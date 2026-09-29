@@ -110,6 +110,7 @@ class MainActivity : ComponentActivity() {
                             ProfileScreen(
                                 user = userProfile,
                                 matchHistory = matchHistory,
+                                friends = friendsList,
                                 onUpdateProfile = { name, avatarId ->
                                     viewModel.updateProfile(name, avatarId)
                                 },
@@ -127,9 +128,18 @@ class MainActivity : ComponentActivity() {
 
                         AppScreen.SHOP -> {
                             ShopScreen(
-                                currentCoins = userProfile.coins,
+                                user = userProfile,
                                 onBuyCoins = { amount ->
                                     viewModel.addCoinsPackage(amount)
+                                },
+                                onBuyGems = { amount ->
+                                    viewModel.addGemsPackage(amount)
+                                },
+                                onBuyVip = {
+                                    viewModel.buyVipPass()
+                                },
+                                onSelectDice = { style ->
+                                    viewModel.selectDiceStyle(style)
                                 },
                                 onBack = { currentScreen = AppScreen.HOME }
                             )

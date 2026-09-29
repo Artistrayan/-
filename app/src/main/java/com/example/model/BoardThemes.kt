@@ -4,18 +4,18 @@ object BoardThemes {
     val ALL_THEMES = listOf(
         BoardTheme(
             id = 1,
-            name = "Classic Wood",
+            name = "Mythic Dragon (Cyan & Gold)",
             unlockLevel = 1,
-            description = "Handcrafted Walnut & Oak wooden board with brass inlaid points.",
-            boardBackgroundColors = listOf(0xFF2C1810, 0xFF1F0E08),
-            woodBorderColor = 0xFF5A3825,
-            pointColorLight = 0xFFD2B48C,
-            pointColorDark = 0xFF8B4513,
-            checkerWhiteColors = listOf(0xFFFFF8DC, 0xFFDEB887),
-            checkerBlackColors = listOf(0xFF3E2723, 0xFF1B0000),
-            accentGlowColor = 0xFFFFD700,
-            particleColor = 0x88FFD700,
-            iconEmoji = "🪵"
+            description = "Ancient Cyan Dragon & Imperial 24K Gold Dragon with glowing neon points and obsidian checkers.",
+            boardBackgroundColors = listOf(0xFF0F141C, 0xFF080B10),
+            woodBorderColor = 0xFF181C26,
+            pointColorLight = 0xFF00E5FF,
+            pointColorDark = 0xFFFFD700,
+            checkerWhiteColors = listOf(0xFF00E5FF, 0xFF0052CC),
+            checkerBlackColors = listOf(0xFFFFD700, 0xFFD4AF37),
+            accentGlowColor = 0xFF00E5FF,
+            particleColor = 0x8800E5FF,
+            iconEmoji = "🐉"
         ),
         BoardTheme(
             id = 2,

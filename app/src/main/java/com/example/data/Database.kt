@@ -10,15 +10,20 @@ data class UserEntity(
     val username: String = "Master_Nard",
     val avatarId: Int = 1,
     val customAvatarUri: String? = null,
-    val coins: Long = 10000,
-    val level: Int = 1,
-    val xp: Long = 0,
-    val wins: Int = 0,
-    val losses: Int = 0,
-    val gammons: Int = 0,
-    val totalMatches: Int = 0,
+    val coins: Long = 50000,
+    val gems: Long = 250,
+    val level: Int = 8,
+    val xp: Long = 3450,
+    val rating: Int = 1540,
+    val wins: Int = 38,
+    val losses: Int = 12,
+    val gammons: Int = 14,
+    val totalMatches: Int = 50,
+    val winStreak: Int = 5,
     val selectedBoardId: Int = 1,
-    val selectedDiceStyle: String = "Gold",
+    val selectedDiceStyle: String = "CyanDragon",
+    val vipTier: String = "VIP طلایی",
+    val isVipActive: Boolean = true,
     val lastDailyClaimTime: Long = 0
 )
 
@@ -58,8 +63,14 @@ interface UserDao {
     @Query("UPDATE user_profile SET coins = :newCoins WHERE id = 1")
     suspend fun updateCoins(newCoins: Long)
 
+    @Query("UPDATE user_profile SET gems = :newGems WHERE id = 1")
+    suspend fun updateGems(newGems: Long)
+
     @Query("UPDATE user_profile SET selectedBoardId = :boardId WHERE id = 1")
     suspend fun setSelectedBoard(boardId: Int)
+
+    @Query("UPDATE user_profile SET selectedDiceStyle = :diceStyle WHERE id = 1")
+    suspend fun setSelectedDiceStyle(diceStyle: String)
 }
 
 @Dao
@@ -83,7 +94,7 @@ interface FriendDao {
     suspend fun deleteFriend(friendId: Long)
 }
 
-@Database(entities = [UserEntity::class, MatchEntity::class, FriendEntity::class], version = 1, exportSchema = false)
+@Database(entities = [UserEntity::class, MatchEntity::class, FriendEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun matchDao(): MatchDao

@@ -22,18 +22,30 @@ class GameRepository(context: Context) {
         var user = userDao.getUserProfile()
         if (user == null) {
             user = UserEntity(
-                username = "Takhte_Master_${(1000..9999).random()}",
-                coins = 25000,
-                level = 1,
-                xp = 0
+                username = "امپراتور_تخته",
+                coins = 50000,
+                gems = 250,
+                level = 8,
+                xp = 3450,
+                rating = 1540,
+                wins = 38,
+                losses = 12,
+                gammons = 14,
+                totalMatches = 50,
+                winStreak = 5,
+                selectedBoardId = 1,
+                selectedDiceStyle = "CyanDragon",
+                vipTier = "VIP طلایی",
+                isVipActive = true
             )
             userDao.insertOrUpdateUser(user)
 
             // Seed initial friends for social leaderboard
-            friendDao.insertFriend(FriendEntity(friendName = "Khosrow_King", level = 45, coins = 850000, avatarId = 2))
-            friendDao.insertFriend(FriendEntity(friendName = "Persia_Pro", level = 28, coins = 320000, avatarId = 3))
-            friendDao.insertFriend(FriendEntity(friendName = "Cyrus_The_Great", level = 72, coins = 2400000, avatarId = 4))
-            friendDao.insertFriend(FriendEntity(friendName = "Darius_Nard", level = 12, coins = 85000, avatarId = 5))
+            friendDao.insertFriend(FriendEntity(friendName = "خسرو_پرویز", level = 45, coins = 1850000, avatarId = 2))
+            friendDao.insertFriend(FriendEntity(friendName = "شاهین_اصفهان", level = 34, coins = 920000, avatarId = 3))
+            friendDao.insertFriend(FriendEntity(friendName = "کوروش_بزرگ", level = 72, coins = 4800000, avatarId = 4))
+            friendDao.insertFriend(FriendEntity(friendName = "داریوش_شیراز", level = 26, coins = 430000, avatarId = 5))
+            friendDao.insertFriend(FriendEntity(friendName = "سهراب_یل", level = 19, coins = 210000, avatarId = 6))
         }
     }
 
@@ -46,10 +58,31 @@ class GameRepository(context: Context) {
         userDao.setSelectedBoard(boardId)
     }
 
+    suspend fun selectDiceStyle(style: String) {
+        userDao.setSelectedDiceStyle(style)
+    }
+
     suspend fun addCoins(amount: Long) {
         val current = userDao.getUserProfile() ?: UserEntity()
         val newCoins = (current.coins + amount).coerceAtLeast(0)
         userDao.updateCoins(newCoins)
+    }
+
+    suspend fun addGems(amount: Long) {
+        val current = userDao.getUserProfile() ?: UserEntity()
+        val newGems = (current.gems + amount).coerceAtLeast(0)
+        userDao.updateGems(newGems)
+    }
+
+    suspend fun purchaseVipPass() {
+        val current = userDao.getUserProfile() ?: UserEntity()
+        val updated = current.copy(
+            isVipActive = true,
+            vipTier = "VIP امپراتور اژدها",
+            coins = current.coins + 100000,
+            gems = current.gems + 500
+        )
+        userDao.insertOrUpdateUser(updated)
     }
 
     suspend fun claimDailyReward(): Pair<Boolean, Long> {

@@ -18,16 +18,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.DiceRoll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
@@ -49,7 +55,6 @@ fun SidebarDiceWidget(
     ) {
         if (diceRoll == null) {
             if (isMyTurn || isRollingForTurn) {
-                // Large Glowing "ROLL DICE" Button in Center
                 val pulseAnim = rememberInfiniteTransition(label = "pulse")
                 val glowAlpha by pulseAnim.animateFloat(
                     initialValue = 0.6f,
@@ -123,7 +128,6 @@ fun SidebarDiceWidget(
                 }
             }
         } else {
-            // Display Static Numbers / Cubes
             Row(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -145,167 +149,271 @@ fun BoardDiceOverlay(
     isMyTurn: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var isRollingAnimation by remember { mutableStateOf(false) }
+    val view = LocalView.current
 
-    // Multi-axis rotation and dynamic scale for realistic 3D tumble
-    val rotationAnim1 = remember { Animatable(0f) }
-    val rotationAnim2 = remember { Animatable(0f) }
-    val scaleAnim = remember { Animatable(1f) }
-    val particleProgress = remember { Animatable(0f) }
-    
-    // Throw trajectory from player side directly into Left or Right playfield
-    val offsetXAnim1 = remember { Animatable(0f) }
-    val offsetYAnim1 = remember { Animatable(0f) }
-    val offsetXAnim2 = remember { Animatable(0f) }
-    val offsetYAnim2 = remember { Animatable(0f) }
+    val animProgress = remember { Animatable(1f) }
+    var rollingDisplay1 by remember { mutableIntStateOf(1) }
+    var rollingDisplay2 by remember { mutableIntStateOf(2) }
 
-    // Natural final landing resting tilt angle
-    val restAngle1 = remember { -8f + Random.nextInt(16).toFloat() }
-    val restAngle2 = remember { 6f + Random.nextInt(16).toFloat() }
+    val restTiltX1 = remember { -6f + Random.nextFloat() * 12f }
+    val restTiltY1 = remember { -6f + Random.nextFloat() * 12f }
+    val restTiltZ1 = remember { -12f + Random.nextFloat() * 24f }
+
+    val restTiltX2 = remember { -6f + Random.nextFloat() * 12f }
+    val restTiltY2 = remember { -6f + Random.nextFloat() * 12f }
+    val restTiltZ2 = remember { -12f + Random.nextFloat() * 24f }
+
+    var impactTriggered1 by remember { mutableStateOf(false) }
+    var impactTriggered2 by remember { mutableStateOf(false) }
+
+    val isDoubles = (diceRoll != null && diceRoll.die1 == diceRoll.die2)
 
     LaunchedEffect(diceRoll, openingRoll) {
-        if (openingRoll != null) {
-            // Opening roll: White die lands on Left quadrant (-135dp), Black die on Right quadrant (+135dp)
-            isRollingAnimation = true
-            rotationAnim1.snapTo(0f)
-            rotationAnim2.snapTo(0f)
-            scaleAnim.snapTo(0.3f)
-            particleProgress.snapTo(0f)
+        if (openingRoll != null || diceRoll != null) {
+            animProgress.snapTo(0f)
+            impactTriggered1 = false
+            impactTriggered2 = false
 
-            offsetXAnim1.snapTo(-350f)
-            offsetYAnim1.snapTo(100f)
-            offsetXAnim2.snapTo(350f)
-            offsetYAnim2.snapTo(-100f)
-
-            launch {
-                offsetXAnim1.animateTo(-135f, tween(650, easing = FastOutSlowInEasing))
-            }
-            launch {
-                offsetYAnim1.animateTo(0f, tween(650, easing = FastOutSlowInEasing))
-            }
-            launch {
-                offsetXAnim2.animateTo(135f, tween(650, easing = FastOutSlowInEasing))
-            }
-            launch {
-                offsetYAnim2.animateTo(0f, tween(650, easing = FastOutSlowInEasing))
+            val rollJob = launch {
+                while (animProgress.value < 0.85f) {
+                    rollingDisplay1 = Random.nextInt(1, 7)
+                    rollingDisplay2 = Random.nextInt(1, 7)
+                    delay(45)
+                }
+                if (openingRoll != null) {
+                    rollingDisplay1 = openingRoll.first
+                    rollingDisplay2 = openingRoll.second
+                } else if (diceRoll != null) {
+                    rollingDisplay1 = diceRoll.die1
+                    rollingDisplay2 = diceRoll.die2
+                }
             }
 
-            scaleAnim.animateTo(1.2f, spring(stiffness = Spring.StiffnessLow))
-            launch {
-                rotationAnim1.animateTo(1080f + restAngle1, tween(700, easing = FastOutSlowInEasing))
-            }
-            launch {
-                rotationAnim2.animateTo(1080f + restAngle2, tween(700, easing = FastOutSlowInEasing))
-            }
-            particleProgress.animateTo(1f, tween(700, easing = LinearOutSlowInEasing))
-            scaleAnim.animateTo(1.0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
-
-            isRollingAnimation = false
-        } else if (diceRoll != null) {
-            // Regular roll:
-            // White rolls to Right quadrant (+135dp), Black rolls to Left quadrant (-135dp)
-            isRollingAnimation = true
-            rotationAnim1.snapTo(0f)
-            rotationAnim2.snapTo(0f)
-            scaleAnim.snapTo(0.3f)
-            particleProgress.snapTo(0f)
-
-            val startX = if (isMyTurn) -350f else 350f
-            val targetBaseX = if (isMyTurn) 135f else -135f
-
-            offsetXAnim1.snapTo(startX)
-            offsetYAnim1.snapTo(50f)
-            offsetXAnim2.snapTo(startX)
-            offsetYAnim2.snapTo(-50f)
-
-            // Throw animation: curved trajectory to middle of target field (left or right, never center)
-            launch {
-                offsetXAnim1.animateTo(targetBaseX - 24f, tween(600, easing = FastOutSlowInEasing))
-            }
-            launch {
-                offsetYAnim1.animateTo(-8f + Random.nextInt(16).toFloat(), tween(600, easing = FastOutSlowInEasing))
-            }
-            launch {
-                offsetXAnim2.animateTo(targetBaseX + 24f, tween(600, easing = FastOutSlowInEasing))
-            }
-            launch {
-                offsetYAnim2.animateTo(8f + Random.nextInt(16).toFloat(), tween(600, easing = FastOutSlowInEasing))
-            }
-
-            // Tumble and bounce
-            scaleAnim.animateTo(1.2f, spring(stiffness = Spring.StiffnessLow))
-            launch {
-                rotationAnim1.animateTo(1440f + restAngle1, tween(700, easing = FastOutSlowInEasing))
-            }
-            launch {
-                rotationAnim2.animateTo(1440f + restAngle2, tween(700, easing = FastOutSlowInEasing))
-            }
-            particleProgress.animateTo(1f, tween(700, easing = LinearOutSlowInEasing))
-            scaleAnim.animateTo(1.0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
-
-            isRollingAnimation = false
+            animProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 850, easing = LinearEasing)
+            )
+            rollJob.join()
         }
     }
 
-    if (openingRoll != null) {
+    val progress = animProgress.value
+
+    LaunchedEffect(progress) {
+        if (progress in 0.52f..0.58f && !impactTriggered1) {
+            impactTriggered1 = true
+            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        } else if (progress in 0.80f..0.86f && !impactTriggered2) {
+            impactTriggered2 = true
+            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        }
+    }
+
+    if (openingRoll != null || diceRoll != null) {
+        val finalVal1 = openingRoll?.first ?: (diceRoll?.die1 ?: 1)
+        val finalVal2 = openingRoll?.second ?: (diceRoll?.die2 ?: 2)
+
+        val showVal1 = if (progress >= 0.85f) finalVal1 else rollingDisplay1
+        val showVal2 = if (progress >= 0.85f) finalVal2 else rollingDisplay2
+
+        val startX1: Float
+        val startY1: Float
+        val targetX1: Float
+        val targetY1: Float
+
+        val startX2: Float
+        val startY2: Float
+        val targetX2: Float
+        val targetY2: Float
+
+        if (openingRoll != null) {
+            startX1 = -380f
+            startY1 = 120f
+            targetX1 = -140f
+            targetY1 = 0f
+
+            startX2 = 380f
+            startY2 = -120f
+            targetX2 = 140f
+            targetY2 = 0f
+        } else {
+            val baseStartX = if (isMyTurn) -380f else 380f
+            val baseTargetX = if (isMyTurn) 140f else -140f
+
+            startX1 = baseStartX
+            startY1 = 60f
+            targetX1 = baseTargetX - 26f
+            targetY1 = -10f
+
+            startX2 = baseStartX
+            startY2 = -60f
+            targetX2 = baseTargetX + 26f
+            targetY2 = 12f
+        }
+
+        val interp = cubicEaseOut(progress)
+        val curX1 = startX1 + (targetX1 - startX1) * interp
+        val curY1 = startY1 + (targetY1 - startY1) * interp
+        val curX2 = startX2 + (targetX2 - startX2) * interp
+        val curY2 = startY2 + (targetY2 - startY2) * interp
+
+        val height1 = computeParabolicBounceHeight(progress, 85f, 30f, 8f)
+        val height2 = computeParabolicBounceHeight(progress, 75f, 26f, 7f)
+
+        val rotX1 = (1f - progress) * 1080f + restTiltX1
+        val rotY1 = (1f - progress) * 720f + restTiltY1
+        val rotZ1 = (1f - progress) * 1440f + restTiltZ1
+
+        val rotX2 = (1f - progress) * 900f + restTiltX2
+        val rotY2 = (1f - progress) * 1080f + restTiltY2
+        val rotZ2 = (1f - progress) * 1260f + restTiltZ2
+
+        val die1Available = diceRoll?.remainingMoves?.contains(diceRoll.die1) ?: true
+        val die2Available = diceRoll?.remainingMoves?.contains(diceRoll.die2) ?: true
+
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            if (particleProgress.value in 0.01f..0.99f) {
-                DiceSparkleBurst(progress = particleProgress.value)
+            if (progress in 0.50f..0.98f) {
+                val burstProgress = ((progress - 0.50f) / 0.48f).coerceIn(0f, 1f)
+                DiceSparkleBurst(
+                    progress = burstProgress,
+                    centerOffset = Offset(curX1, curY1)
+                )
+                DiceSparkleBurst(
+                    progress = burstProgress,
+                    centerOffset = Offset(curX2, curY2)
+                )
             }
 
-            // White Player Die on Left Quadrant
-            Box(
-                modifier = Modifier
-                    .offset(x = offsetXAnim1.value.dp, y = offsetYAnim1.value.dp)
-                    .scale(scaleAnim.value)
-                    .rotate(if (isRollingAnimation) rotationAnim1.value else restAngle1)
-            ) {
-                Single3DDieCube(value = openingRoll.first, isUsed = false, size = 38.dp)
+            if (isDoubles && progress >= 0.82f) {
+                val auraPulse = rememberInfiniteTransition(label = "aura")
+                val auraScale by auraPulse.animateFloat(
+                    initialValue = 0.95f,
+                    targetValue = 1.25f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "auraScale"
+                )
+                Canvas(modifier = Modifier.size(160.dp).offset(x = curX1.dp, y = curY1.dp)) {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color(0xFFFFD700).copy(alpha = 0.45f),
+                                Color(0xFFFF8F00).copy(alpha = 0.15f),
+                                Color.Transparent
+                            )
+                        ),
+                        radius = size.width * 0.5f * auraScale
+                    )
+                }
             }
 
-            // Black Player Die on Right Quadrant
-            Box(
-                modifier = Modifier
-                    .offset(x = offsetXAnim2.value.dp, y = offsetYAnim2.value.dp)
-                    .scale(scaleAnim.value)
-                    .rotate(if (isRollingAnimation) rotationAnim2.value else restAngle2)
-            ) {
-                Single3DDieCube(value = openingRoll.second, isUsed = false, size = 38.dp)
-            }
+            Realistic3DDieActor(
+                value = showVal1,
+                offsetX = curX1,
+                offsetY = curY1,
+                heightZ = height1,
+                rotX = rotX1,
+                rotY = rotY1,
+                rotZ = rotZ1,
+                isUsed = !die1Available,
+                size = 40.dp
+            )
+
+            Realistic3DDieActor(
+                value = showVal2,
+                offsetX = curX2,
+                offsetY = curY2,
+                heightZ = height2,
+                rotX = rotX2,
+                rotY = rotY2,
+                rotZ = rotZ2,
+                isUsed = !die2Available,
+                size = 40.dp
+            )
         }
-    } else if (diceRoll != null) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            // Particle Burst behind dice during roll
-            if (particleProgress.value in 0.01f..0.99f) {
-                DiceSparkleBurst(progress = particleProgress.value)
-            }
+    }
+}
 
-            // Die 1
-            Box(
-                modifier = Modifier
-                    .offset(x = offsetXAnim1.value.dp, y = offsetYAnim1.value.dp)
-                    .scale(scaleAnim.value)
-                    .rotate(if (isRollingAnimation) rotationAnim1.value else restAngle1)
-            ) {
-                Single3DDieCube(value = diceRoll.die1, isUsed = false, size = 38.dp)
-            }
+private fun cubicEaseOut(t: Float): Float {
+    val f = t - 1.0f
+    return f * f * f + 1.0f
+}
 
-            // Die 2
-            Box(
-                modifier = Modifier
-                    .offset(x = offsetXAnim2.value.dp, y = offsetYAnim2.value.dp)
-                    .scale(scaleAnim.value)
-                    .rotate(if (isRollingAnimation) rotationAnim2.value else restAngle2)
-            ) {
-                Single3DDieCube(value = diceRoll.die2, isUsed = false, size = 38.dp)
-            }
+private fun computeParabolicBounceHeight(t: Float, h1: Float, h2: Float, h3: Float): Float {
+    return when {
+        t < 0.54f -> {
+            val p = t / 0.54f
+            4f * h1 * p * (1f - p)
         }
+        t < 0.82f -> {
+            val p = (t - 0.54f) / 0.28f
+            4f * h2 * p * (1f - p)
+        }
+        t < 1.0f -> {
+            val p = (t - 0.82f) / 0.18f
+            4f * h3 * p * (1f - p)
+        }
+        else -> 0f
+    }
+}
+
+@Composable
+fun Realistic3DDieActor(
+    value: Int,
+    offsetX: Float,
+    offsetY: Float,
+    heightZ: Float,
+    rotX: Float,
+    rotY: Float,
+    rotZ: Float,
+    isUsed: Boolean,
+    size: Dp
+) {
+    val shadowScale = (1f + (heightZ / 80f) * 0.7f).coerceIn(1f, 1.8f)
+    val shadowAlpha = ((1f - (heightZ / 80f) * 0.75f) * 0.85f).coerceIn(0.15f, 0.85f)
+    val shadowOffsetY = offsetY + (heightZ * 0.35f) + 12f
+
+    Box(
+        modifier = Modifier
+            .offset(x = offsetX.dp, y = shadowOffsetY.dp)
+            .size(width = size * 1.15f * shadowScale, height = size * 0.55f * shadowScale)
+            .graphicsLayer {
+                alpha = if (isUsed) shadowAlpha * 0.4f else shadowAlpha
+            }
+            .clip(CircleShape)
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        Color.Black.copy(alpha = 0.90f),
+                        Color.Black.copy(alpha = 0.50f),
+                        Color.Transparent
+                    )
+                )
+            )
+    )
+
+    Box(
+        modifier = Modifier
+            .offset(x = offsetX.dp, y = (offsetY - heightZ).dp)
+            .graphicsLayer {
+                rotationX = rotX
+                rotationY = rotY
+                rotationZ = rotZ
+                cameraDistance = 16f * density
+                scaleX = 1f + (heightZ / 100f) * 0.15f
+                scaleY = 1f + (heightZ / 100f) * 0.15f
+            }
+    ) {
+        Single3DDieCube(
+            value = value,
+            isUsed = isUsed,
+            size = size
+        )
     }
 }
 
@@ -313,67 +421,96 @@ fun BoardDiceOverlay(
 fun Single3DDieCube(
     value: Int,
     isUsed: Boolean,
-    size: androidx.compose.ui.unit.Dp = 38.dp
+    size: Dp = 40.dp
 ) {
     val alpha = if (isUsed) 0.35f else 1.0f
+    val neonColor = Color(0xFF00E5FF)
 
     Box(
         modifier = Modifier
             .size(size)
             .shadow(
-                elevation = if (isUsed) 2.dp else 10.dp,
+                elevation = if (isUsed) 2.dp else 12.dp,
                 shape = RoundedCornerShape(10.dp),
                 ambientColor = Color.Black,
-                spotColor = Color(0xFFFFD700)
+                spotColor = neonColor
             )
             .clip(RoundedCornerShape(10.dp))
             .background(
                 if (isUsed) {
-                    Brush.linearGradient(listOf(Color(0xFF2C2C34), Color(0xFF1E1E24)))
+                    Brush.linearGradient(listOf(Color(0xFF1E212B), Color(0xFF111319)))
                 } else {
                     Brush.linearGradient(
                         listOf(
-                            Color(0xFFFFFFFF),
-                            Color(0xFFFFF9E6),
-                            Color(0xFFF0DEB4),
-                            Color(0xFFD6BA84)
+                            Color(0xFF262E3E),
+                            Color(0xFF171B26),
+                            Color(0xFF0C0E14)
                         )
                     )
                 }
             )
             .border(
-                width = 1.5.dp,
+                width = 1.6.dp,
                 brush = Brush.linearGradient(
                     listOf(
-                        Color(0xFFFFD700).copy(alpha = alpha),
-                        Color(0xFFB8860B).copy(alpha = alpha * 0.7f),
-                        Color(0xFFFFE082).copy(alpha = alpha)
+                        neonColor.copy(alpha = alpha),
+                        Color(0xFF0D47A1).copy(alpha = alpha * 0.7f),
+                        neonColor.copy(alpha = alpha)
                     )
                 ),
                 shape = RoundedCornerShape(10.dp)
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Top-left Specular Bevel Highlight
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(2.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = if (isUsed) 0.05f else 0.45f),
-                            Color.Transparent
-                        ),
-                        center = Offset(8f, 8f),
-                        radius = 35f
-                    )
-                )
-        )
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = this.size.width
+            val h = this.size.height
 
-        // Die Face Dots (Pip Positions)
-        DieDotsLayout(value = value, dotColor = if (isUsed) Color.Gray else Color(0xFF8B0000))
+            val highlightPath = Path().apply {
+                moveTo(0f, 0f)
+                lineTo(w, 0f)
+                lineTo(w - 6f, 6f)
+                lineTo(6f, 6f)
+                lineTo(6f, h - 6f)
+                lineTo(0f, h)
+                close()
+            }
+            drawPath(
+                path = highlightPath,
+                brush = Brush.linearGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isUsed) 0.05f else 0.55f),
+                        Color.Transparent
+                    )
+                ),
+                style = Fill
+            )
+
+            val shadowPath = Path().apply {
+                moveTo(w, 0f)
+                lineTo(w, h)
+                lineTo(0f, h)
+                lineTo(6f, h - 6f)
+                lineTo(w - 6f, h - 6f)
+                lineTo(w - 6f, 6f)
+                close()
+            }
+            drawPath(
+                path = shadowPath,
+                brush = Brush.linearGradient(
+                    listOf(
+                        Color.Black.copy(alpha = if (isUsed) 0.15f else 0.45f),
+                        Color.Transparent
+                    )
+                ),
+                style = Fill
+            )
+        }
+
+        DieDotsLayout(
+            value = value,
+            dotColor = if (isUsed) Color.Gray else neonColor
+        )
     }
 }
 
@@ -388,7 +525,7 @@ fun DieDotsLayout(value: Int, dotColor: Color) {
     ) {
         when (value) {
             1 -> {
-                DieDot(dotColor, dotSize, Alignment.Center)
+                DieDot(dotColor, dotSize * 1.25f, Alignment.Center)
             }
             2 -> {
                 DieDot(dotColor, dotSize, Alignment.TopStart)
@@ -427,7 +564,7 @@ fun DieDotsLayout(value: Int, dotColor: Color) {
 @Composable
 fun BoxScope.DieDot(
     color: Color,
-    size: androidx.compose.ui.unit.Dp,
+    size: Dp,
     alignment: Alignment
 ) {
     Box(
@@ -438,39 +575,53 @@ fun BoxScope.DieDot(
             .background(
                 Brush.radialGradient(
                     colors = listOf(
+                        Color.White,
                         color,
                         color.copy(alpha = 0.85f),
-                        Color.Black.copy(alpha = 0.6f)
+                        Color.Black.copy(alpha = 0.5f)
                     )
                 )
             )
-            .border(0.5.dp, Color.Black.copy(alpha = 0.3f), CircleShape)
+            .border(0.6.dp, color.copy(alpha = 0.7f), CircleShape)
     )
 }
 
 @Composable
-fun DiceSparkleBurst(progress: Float) {
+fun DiceSparkleBurst(
+    progress: Float,
+    centerOffset: Offset = Offset.Zero
+) {
     Canvas(
         modifier = Modifier
-            .size(140.dp)
+            .size(150.dp)
+            .offset(x = centerOffset.x.dp, y = centerOffset.y.dp)
     ) {
         val center = Offset(size.width / 2f, size.height / 2f)
-        val particleCount = 16
+        val particleCount = 18
+
+        val ringRadius = progress * (size.width * 0.48f)
+        drawCircle(
+            color = Color(0xFFFFD700).copy(alpha = ((1f - progress) * 0.4f).coerceIn(0f, 0.4f)),
+            radius = ringRadius,
+            center = center,
+            style = Stroke(width = 2.dp.toPx())
+        )
 
         for (i in 0 until particleCount) {
             val angle = (i * (360f / particleCount)) * (PI / 180f).toFloat()
-            val distance = progress * (size.width * 0.45f)
+            val distance = progress * (size.width * 0.50f)
             val px = center.x + cos(angle) * distance
             val py = center.y + sin(angle) * distance
-            val alpha = ((1f - progress) * 0.9f).coerceIn(0f, 1f)
-            val radius = (1f - progress) * 4f + 2f
+            val alpha = ((1f - progress) * 0.95f).coerceIn(0f, 1f)
+            val radius = ((1f - progress) * 5f + 1.5f).coerceAtLeast(0.5f)
 
             drawCircle(
-                color = Color(0xFFFFD700).copy(alpha = alpha),
+                color = if (i % 2 == 0) Color(0xFFFFD700).copy(alpha = alpha) else Color(0xFFFF6D00).copy(alpha = alpha),
                 radius = radius,
                 center = Offset(px, py)
             )
         }
     }
 }
+
 private const val PI = 3.141592653589793

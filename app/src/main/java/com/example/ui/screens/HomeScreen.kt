@@ -191,64 +191,92 @@ fun HomeScreen(
                     }
                 }
 
-                // CENTER: Luxurious Gold Calligraphy Logo with "HIGH STAKES" Tag
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                // CENTER: Luxurious Gold Calligraphy Logo with Royal Dragon Insignia & "HIGH STAKES" Tag
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "تخته نرد حرفه‌ای",
-                        color = Color(0xFFFFDF00),
-                        fontSize = 25.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        style = TextStyle(
-                            shadow = Shadow(
-                                color = Color(0xFFFFB300).copy(alpha = 0.8f),
-                                blurRadius = 20f
-                            )
-                        )
+                    Image(
+                        painter = painterResource(id = R.drawable.royal_dragon_insignia_1790547059357),
+                        contentDescription = "نشان سلطنتی اژدها",
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(CircleShape)
+                            .border(1.5.dp, Color(0xFFFFD700), CircleShape)
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Surface(
-                        color = Color(0xFF0F1420).copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(10.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.6f))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "✦ HIGH STAKES ✦",
-                            color = Color(0xFF00E5FF),
-                            fontSize = 9.sp,
-                            letterSpacing = 2.sp,
+                            text = "تخته‌نرد سلطنتی اژدها",
+                            color = Color(0xFFFFDF00),
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            style = TextStyle(
+                                shadow = Shadow(
+                                    color = Color(0xFFFFB300).copy(alpha = 0.8f),
+                                    blurRadius = 18f
+                                )
+                            )
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Surface(
+                            color = Color(0xFF0F1420).copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.7f))
+                        ) {
+                            Text(
+                                text = "✦ ROYAL DRAGON VIP ✦",
+                                color = Color(0xFF00E5FF),
+                                fontSize = 8.sp,
+                                letterSpacing = 1.5.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
 
-                // RIGHT: Wallet Balance with Coin Icon + Glowing "شارژ" Button
+                // RIGHT: Wallet Balance with Coin & Gem Chips + Glowing "شارژ" Button
                 GlassCard(
                     cornerRadius = 24.dp,
-                    backgroundColor = Color(0xFF14131E).copy(alpha = 0.75f),
-                    borderColor = Color(0xFFFFD700).copy(alpha = 0.35f)
+                    backgroundColor = Color(0xFF14131E).copy(alpha = 0.85f),
+                    borderColor = Color(0xFFFFD700).copy(alpha = 0.45f)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        Column(
+                            verticalArrangement = Arrangement.Center,
                             modifier = Modifier.clickable { onNavigateToShop() }
                         ) {
-                            Text("🪙", fontSize = 18.sp)
-                            Text(
-                                text = "${user.coins} سکه",
-                                color = Color(0xFFFFD700),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                style = TextStyle(shadow = Shadow(Color.Black, blurRadius = 8f))
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text("🪙", fontSize = 14.sp)
+                                Text(
+                                    text = "${user.coins}",
+                                    color = Color(0xFFFFD700),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text("💎", fontSize = 14.sp)
+                                Text(
+                                    text = "${user.gems}",
+                                    color = Color(0xFF00E5FF),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
                         }
 
                         // Glowing Charge Button
@@ -257,12 +285,12 @@ fun HomeScreen(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(
                                     Brush.horizontalGradient(
-                                        listOf(Color(0xFF00E676), Color(0xFF00B0FF))
+                                        listOf(Color(0xFFFFD700), Color(0xFFFF9100))
                                     )
                                 )
                                 .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                                 .clickable { onNavigateToShop() }
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -277,27 +305,79 @@ fun HomeScreen(
             }
 
             // ==========================================
-            // MAIN CONTENT: 3 Large Modern Game Mode Cards
+            // STAKE / BET SELECTOR BAR
             // ==========================================
+            var selectedBet by remember { mutableStateOf(100L) }
+            val betOptions = listOf(100L, 1000L, 10000L, 50000L)
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .padding(vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Text(
+                    text = "میز شرط‌بندی:",
+                    color = Color(0xFFFFE082),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                betOptions.forEach { betVal ->
+                    val isChosen = (selectedBet == betVal)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isChosen) {
+                                    Brush.horizontalGradient(
+                                        listOf(Color(0xFFFFD700), Color(0xFFFF9100))
+                                    )
+                                } else {
+                                    Brush.horizontalGradient(
+                                        listOf(Color(0xFF161C2A), Color(0xFF1E283C))
+                                    )
+                                }
+                            )
+                            .border(
+                                1.dp,
+                                if (isChosen) Color.White else Color(0xFFFFD700).copy(alpha = 0.3f),
+                                RoundedCornerShape(10.dp)
+                            )
+                            .clickable { selectedBet = betVal }
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "🪙 ${if (betVal >= 1000) "${betVal / 1000}K" else "$betVal"}",
+                            color = if (isChosen) Color.Black else Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+            }
+
+            // ==========================================
+            // MAIN CONTENT: 3 Wide Horizontal Game Mode Cards (Image 2 style)
+            // ==========================================
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 // Card 1: LIVE ONLINE (Cyan Neon)
-                GameModeGlassCard(
-                    modifier = Modifier.weight(1f),
+                GameModeHorizontalCard(
                     badge = "LIVE ONLINE",
                     title = "بازی آنلاین دو نفره",
                     subtitle = "رقابت زنده با بازیکنان سراسر جهان",
                     icon = "🌐",
                     neonColor = Color(0xFF00E5FF),
                     onClick = {
-                        if (user.coins >= defaultBet) {
-                            onStartMatch(defaultBet, GameMode.ONLINE_QUICK)
+                        if (user.coins >= selectedBet) {
+                            onStartMatch(selectedBet, GameMode.ONLINE_QUICK)
                         } else {
                             Toast.makeText(context, "سکه کافی نیست! از منوی شارژ سکه تهیه کنید.", Toast.LENGTH_SHORT).show()
                         }
@@ -305,16 +385,15 @@ fun HomeScreen(
                 )
 
                 // Card 2: PRACTICE (Purple Neon)
-                GameModeGlassCard(
-                    modifier = Modifier.weight(1f),
-                    badge = "PRACTICE",
-                    title = "بازی با هوش مصنوعی",
-                    subtitle = "تقویت مهارت در برابر ربات استاد بزرگ",
+                GameModeHorizontalCard(
+                    badge = "GRANDMASTER AI",
+                    title = "نبرد با هوش مصنوعی",
+                    subtitle = "مبارزه با هوش مصنوعی اژدها در ۳ سطح",
                     icon = "🤖",
                     neonColor = Color(0xFFC084FC),
                     onClick = {
-                        if (user.coins >= defaultBet) {
-                            onStartMatch(defaultBet, GameMode.AI_MEDIUM)
+                        if (user.coins >= selectedBet) {
+                            onStartMatch(selectedBet, GameMode.AI_MEDIUM)
                         } else {
                             Toast.makeText(context, "سکه کافی نیست!", Toast.LENGTH_SHORT).show()
                         }
@@ -322,15 +401,18 @@ fun HomeScreen(
                 )
 
                 // Card 3: HIGH STAKES (Gold Neon)
-                GameModeGlassCard(
-                    modifier = Modifier.weight(1f),
-                    badge = "HIGH STAKES",
-                    title = "بازی شرطی / تورنمنت",
-                    subtitle = "میزهای سنگین، مسابقات حذفی و جوایز میلیونی",
+                GameModeHorizontalCard(
+                    badge = "DRAGON LEAGUE",
+                    title = "جام قهرمانان اژدها",
+                    subtitle = "میزهای سنگین سلطنتی و جوایز میلیونی",
                     icon = "💎",
                     neonColor = Color(0xFFFFD700),
                     onClick = {
-                        Toast.makeText(context, "🏆 تورنمنت به زودی فعال می‌شود!", Toast.LENGTH_SHORT).show()
+                        if (user.coins >= selectedBet) {
+                            onStartMatch(selectedBet, GameMode.TOURNAMENT)
+                        } else {
+                            Toast.makeText(context, "سکه کافی برای ورود به تورنمنت ندارید!", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 )
             }
@@ -400,10 +482,10 @@ fun HomeScreen(
                         onClick = onNavigateToShop
                     )
                     BottomNavButton(
-                        icon = Icons.Default.Settings,
-                        label = "تنظیمات",
-                        accentColor = Color(0xFFB0BEC5),
-                        onClick = { showSettingsDialog = true }
+                        icon = Icons.Default.Dashboard,
+                        label = "تخته‌ها",
+                        accentColor = Color(0xFF00E676),
+                        onClick = onNavigateToBoards
                     )
                     BottomNavButton(
                         icon = Icons.Default.CardGiftcard,
@@ -413,21 +495,21 @@ fun HomeScreen(
                         onClick = { showDailyGiftDialog = true }
                     )
                     BottomNavButton(
-                        icon = Icons.Default.History,
-                        label = "تاریخچه",
-                        accentColor = Color(0xFFC084FC),
-                        onClick = { showHistoryDialog = true }
-                    )
-                    BottomNavButton(
                         icon = Icons.Default.Leaderboard,
                         label = "رتبه‌بندی",
                         accentColor = Color(0xFFFFAB00),
                         onClick = onNavigateToLeaderboard
                     )
                     BottomNavButton(
+                        icon = Icons.Default.Settings,
+                        label = "تنظیمات",
+                        accentColor = Color(0xFFB0BEC5),
+                        onClick = { showSettingsDialog = true }
+                    )
+                    BottomNavButton(
                         icon = Icons.Default.Headset,
                         label = "پشتیبانی",
-                        accentColor = Color(0xFF00E676),
+                        accentColor = Color(0xFF80DEEA),
                         onClick = { showSupportDialog = true }
                     )
                 }
@@ -480,11 +562,10 @@ fun HomeScreen(
 }
 
 // =========================================================================
-// ULTRA-PREMIUM GAME MODE GLASS CARD (Cinematic Depth + Glowing Neon Borders)
+// WIDE HORIZONTAL GAME MODE CARD (Image 2 style)
 // =========================================================================
 @Composable
-fun GameModeGlassCard(
-    modifier: Modifier = Modifier,
+fun GameModeHorizontalCard(
     badge: String,
     title: String,
     subtitle: String,
@@ -493,132 +574,97 @@ fun GameModeGlassCard(
     onClick: () -> Unit
 ) {
     Box(
-        modifier = modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(26.dp))
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(76.dp)
+            .clip(RoundedCornerShape(18.dp))
             .background(
-                Brush.verticalGradient(
+                Brush.horizontalGradient(
                     colors = listOf(
-                        Color(0xFF161525).copy(alpha = 0.85f),
-                        Color(0xFF08070F).copy(alpha = 0.95f)
+                        Color(0xFF161525).copy(alpha = 0.92f),
+                        Color(0xFF0C0E18).copy(alpha = 0.97f)
                     )
                 )
             )
             .border(
-                width = 1.8.dp,
-                brush = Brush.verticalGradient(
+                width = 1.6.dp,
+                brush = Brush.horizontalGradient(
                     colors = listOf(
                         neonColor.copy(alpha = 0.9f),
-                        neonColor.copy(alpha = 0.25f),
-                        neonColor.copy(alpha = 0.6f)
+                        neonColor.copy(alpha = 0.4f),
+                        neonColor.copy(alpha = 0.8f)
                     )
                 ),
-                shape = RoundedCornerShape(26.dp)
+                shape = RoundedCornerShape(18.dp)
             )
             .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        // Subtle top illumination spotlight inside the card
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(90.dp)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(neonColor.copy(alpha = 0.22f), Color.Transparent)
-                    )
-                )
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Badge Tag at Top
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(neonColor.copy(alpha = 0.2f))
+                        .border(1.dp, neonColor.copy(alpha = 0.7f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(icon, fontSize = 24.sp)
+                }
+
+                Column(verticalArrangement = Arrangement.Center) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Surface(
+                            color = neonColor.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                badge,
+                                color = neonColor,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                            )
+                        }
+                        Text(
+                            title,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        subtitle,
+                        color = Color.LightGray.copy(alpha = 0.8f),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            // Start Button
             Surface(
-                color = neonColor.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, neonColor.copy(alpha = 0.5f))
+                color = neonColor,
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = badge,
-                    color = neonColor,
-                    fontSize = 10.sp,
-                    letterSpacing = 1.5.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
-
-            // Big Central 3D Icon with Radiant Halo
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            listOf(neonColor.copy(alpha = 0.35f), Color.Transparent)
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = icon,
-                    fontSize = 46.sp,
-                    style = TextStyle(
-                        shadow = Shadow(
-                            color = neonColor,
-                            blurRadius = 25f
-                        )
-                    )
-                )
-            }
-
-            // Title & Subtitle
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = title,
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    style = TextStyle(shadow = Shadow(Color.Black, blurRadius = 10f))
-                )
-                Text(
-                    text = subtitle,
-                    color = Color.LightGray.copy(alpha = 0.8f),
-                    fontSize = 10.sp,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1
-                )
-            }
-
-            // Glowing Launch Button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .height(42.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(neonColor, neonColor.copy(alpha = 0.7f))
-                        )
-                    )
-                    .shadow(elevation = 12.dp, shape = RoundedCornerShape(14.dp), spotColor = neonColor)
-                    .clickable { onClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "شروع بازی",
+                    "شروع بازی",
                     color = Color.Black,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 13.sp,
-                    letterSpacing = 0.5.sp
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
         }

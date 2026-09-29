@@ -102,7 +102,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         currentTurn = PlayerColor.WHITE,
                         dice = DiceRoll(whiteDie, blackDie),
                         openingRoll = null,
-                        turnTimerSeconds = 20,
+                        turnTimerSeconds = 30,
                         isUsingBankTime = false
                     ) ?: return@launch
                     _gameState.value = newState
@@ -119,7 +119,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         currentTurn = PlayerColor.BLACK,
                         dice = DiceRoll(blackDie, whiteDie),
                         openingRoll = null,
-                        turnTimerSeconds = 20,
+                        turnTimerSeconds = 30,
                         isUsingBankTime = false
                     ) ?: return@launch
                     _gameState.value = newState
@@ -139,7 +139,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val rolled = BackgammonRules.rollDice()
         val newState = state.copy(
             dice = rolled,
-            turnTimerSeconds = 20,
+            turnTimerSeconds = 30,
             isUsingBankTime = false
         )
         _gameState.value = newState
@@ -182,8 +182,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         undoStack.clear()
         val switched = BackgammonRules.switchTurn(state)
         _gameState.value = switched.copy(
-            turnTimerSeconds = 20,
-            isUsingBankTime = false
+            turnTimerSeconds = 30,
+            isUsingBankTime = false,
+            selectedPoint = null,
+            highlightedMoves = emptyList()
         )
         _aiCommentary.value = "نوبت به بازیکن ${if (switched.currentTurn == PlayerColor.WHITE) "شما (سفید)" else "حریف (مشکی)"} واگذار شد."
         startTurnTimer()
@@ -193,8 +195,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun startTurnTimer() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
-            // Phase 1: Standard 20 seconds turn timer
-            var time = 20
+            // Phase 1: Standard 30 seconds turn timer
+            var time = 30
             while (time > 0) {
                 val state = _gameState.value ?: break
                 if (state.isGameOver) break
@@ -203,12 +205,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 time--
             }
 
-            val stateAfter20s = _gameState.value ?: return@launch
-            if (stateAfter20s.isGameOver) return@launch
+            val stateAfter30s = _gameState.value ?: return@launch
+            if (stateAfter30s.isGameOver) return@launch
 
             // If player has already played all moves or has no legal moves left, auto confirm turn without consuming bank time!
-            val canMove = BackgammonRules.canMakeAnyMove(stateAfter20s)
-            val hasDice = stateAfter20s.dice != null
+            val canMove = BackgammonRules.canMakeAnyMove(stateAfter30s)
+            val hasDice = stateAfter30s.dice != null
 
             if (hasDice && !canMove) {
                 confirmTurn()
@@ -216,14 +218,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             // Phase 2: Bank Time (30 seconds cumulative extra reserve across the match)
-            val activePlayer = stateAfter20s.currentTurn
+            val activePlayer = stateAfter30s.currentTurn
             var bankRemaining = if (activePlayer == PlayerColor.WHITE) {
-                stateAfter20s.whiteBankSeconds
+                stateAfter30s.whiteBankSeconds
             } else {
-                stateAfter20s.blackBankSeconds
+                stateAfter30s.blackBankSeconds
             }
 
-            _aiCommentary.value = "⏳ مهلت ۲۰ ثانیه به پایان رسید! بانک زمان ۳۰ ثانیه‌ای فعال شد."
+            _aiCommentary.value = "⏳ مهلت ۳۰ ثانیه به پایان رسید! بانک زمان فعال شد."
 
             while (bankRemaining > 0) {
                 val curState = _gameState.value ?: break
@@ -290,12 +292,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val selected = state.selectedPoint
 
         if (selected == null) {
+            // First tap: Select checker and highlight valid destination points
             val pt = if (pointIndex in 1..24) state.points[pointIndex] else PointState()
             if (pt.color == player && pt.count > 0) {
                 val legalForPoint = BackgammonRules.getLegalMoves(state).filter { it.from == pointIndex }
-                if (legalForPoint.size == 1) {
-                    executeMove(legalForPoint.first())
-                } else if (legalForPoint.isNotEmpty()) {
+                if (legalForPoint.isNotEmpty()) {
                     _gameState.value = state.copy(
                         selectedPoint = pointIndex,
                         highlightedMoves = legalForPoint
@@ -303,6 +304,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         } else {
+            // If tapping the currently selected point again -> Deselect
+            if (pointIndex == selected) {
+                _gameState.value = state.copy(selectedPoint = null, highlightedMoves = emptyList())
+                return
+            }
+
+            // Check if tapping a highlighted target destination or bear off
             val matchingMove = state.highlightedMoves.firstOrNull { move ->
                 move.to == pointIndex ||
                 (move.isBearOff && (pointIndex == 0 || pointIndex == 25 || pointIndex == selected))
@@ -311,12 +319,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (matchingMove != null) {
                 executeMove(matchingMove)
             } else {
+                // Tapping another own checker -> Switch selection
                 val pt = if (pointIndex in 1..24) state.points[pointIndex] else PointState()
                 if (pt.color == player && pt.count > 0) {
                     val legalForPoint = BackgammonRules.getLegalMoves(state).filter { it.from == pointIndex }
-                    if (legalForPoint.size == 1) {
-                        executeMove(legalForPoint.first())
-                    } else if (legalForPoint.isNotEmpty()) {
+                    if (legalForPoint.isNotEmpty()) {
                         _gameState.value = state.copy(
                             selectedPoint = pointIndex,
                             highlightedMoves = legalForPoint
@@ -333,16 +340,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onBarClicked(player: PlayerColor) {
         val state = _gameState.value ?: return
-        if (state.currentTurn != player) return
+        if (state.currentTurn != player || state.isGameOver || state.dice == null) return
 
         val barIndex = if (player == PlayerColor.WHITE) BackgammonRules.BAR_WHITE_INDEX else BackgammonRules.BAR_BLACK_INDEX
         val barCount = if (player == PlayerColor.WHITE) state.barWhite else state.barBlack
 
         if (barCount > 0) {
             val legalFromBar = BackgammonRules.getLegalMoves(state).filter { it.from == barIndex }
-            if (legalFromBar.size == 1) {
-                executeMove(legalFromBar.first())
-            } else if (legalFromBar.isNotEmpty()) {
+            if (legalFromBar.isNotEmpty()) {
                 _gameState.value = state.copy(
                     selectedPoint = barIndex,
                     highlightedMoves = legalFromBar
@@ -479,6 +484,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun addCoinsPackage(amount: Long) {
         viewModelScope.launch {
             repository.addCoins(amount)
+        }
+    }
+
+    fun addGemsPackage(amount: Long) {
+        viewModelScope.launch {
+            repository.addGems(amount)
+        }
+    }
+
+    fun buyVipPass() {
+        viewModelScope.launch {
+            repository.purchaseVipPass()
+        }
+    }
+
+    fun selectDiceStyle(style: String) {
+        viewModelScope.launch {
+            repository.selectDiceStyle(style)
         }
     }
 

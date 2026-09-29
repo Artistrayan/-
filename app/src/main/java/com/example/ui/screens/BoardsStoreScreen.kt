@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
@@ -37,16 +37,34 @@ fun BoardsStoreScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("10 LUXURY BOARDS GALLERY", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                title = {
+                    Column {
+                        Text(
+                            "تالار تخته‌های سلطنتی",
+                            color = Color(0xFFFFD700),
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 17.sp
+                        )
+                        Text(
+                            "کلکسیون ۱۰ تخته لوکس تاریخی و اسطوره‌ای",
+                            color = Color(0xFF00E5FF),
+                            fontSize = 11.sp
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F0E17))
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "بازگشت",
+                            tint = Color(0xFFFFD700)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF080B12))
             )
         },
-        containerColor = Color(0xFF0F0E17)
+        containerColor = Color(0xFF080B12)
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -59,7 +77,7 @@ fun BoardsStoreScreen(
                 val isUnlocked = (userLevel >= theme.unlockLevel)
                 val isEquipped = (equippedBoardId == theme.id)
 
-                BoardCard(
+                BoardCardPersian(
                     theme = theme,
                     isUnlocked = isUnlocked,
                     isEquipped = isEquipped,
@@ -71,16 +89,30 @@ fun BoardsStoreScreen(
 }
 
 @Composable
-fun BoardCard(
+fun BoardCardPersian(
     theme: BoardTheme,
     isUnlocked: Boolean,
     isEquipped: Boolean,
     onEquip: () -> Unit
 ) {
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 20.dp,
-        borderColor = if (isEquipped) Color(0xFFFFD700) else Color.White.copy(alpha = 0.15f)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        if (isEquipped) Color(0xFF1E180A) else Color(0xFF111624),
+                        Color(0xFF0A0D17)
+                    )
+                )
+            )
+            .border(
+                1.5.dp,
+                if (isEquipped) Color(0xFFFFD700) else Color.White.copy(alpha = 0.12f),
+                RoundedCornerShape(20.dp)
+            )
+            .padding(16.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
@@ -94,7 +126,7 @@ fun BoardCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
+                            .size(54.dp)
                             .clip(CircleShape)
                             .background(
                                 Brush.radialGradient(
@@ -104,92 +136,103 @@ fun BoardCard(
                             .border(2.dp, Color(theme.woodBorderColor), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(theme.iconEmoji, fontSize = 24.sp)
+                        Text(theme.iconEmoji, fontSize = 26.sp)
                     }
 
                     Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = theme.name,
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (theme.id == 1) {
+                                Surface(
+                                    color = Color(0xFFFFD700),
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        "اصلی 👑",
+                                        color = Color.Black,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+                        }
                         Text(
-                            text = theme.name,
-                            color = Color.White,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = if (isUnlocked) "UNLOCKED (LVL ${theme.unlockLevel})" else "REQUIRES PLAYER LEVEL ${theme.unlockLevel}",
-                            color = if (isUnlocked) Color(0xFFFFD700) else Color.Red.copy(alpha = 0.8f),
+                            text = if (isUnlocked) "قابل دسترسی (سطح ${theme.unlockLevel})" else "نیازمند رسیدن به سطح ${theme.unlockLevel}",
+                            color = if (isUnlocked) Color(0xFFFFD700) else Color(0xFFFF5252),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                if (!isUnlocked) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Locked",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(24.dp)
-                    )
+                if (isEquipped) {
+                    Surface(
+                        color = Color(0xFF00E676).copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E676))
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(14.dp))
+                            Text("انتخاب شده", color = Color(0xFF00E676), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                } else if (!isUnlocked) {
+                    Surface(
+                        color = Color.Red.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = Color.Red, modifier = Modifier.size(14.dp))
+                            Text("قفل", color = Color.Red, fontSize = 11.sp)
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = onEquip,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text("انتخاب تخته", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
             Text(
                 text = theme.description,
                 color = Color.LightGray,
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                lineHeight = 16.sp
             )
 
-            // Board Theme Color Palette Swatches
+            // Color Palette Chips Preview
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Swatches:", color = Color.Gray, fontSize = 10.sp)
-                Box(
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(Color(theme.pointColorLight))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(Color(theme.pointColorDark))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(Color(theme.accentGlowColor))
-                )
-            }
-
-            // Action Button
-            Button(
-                onClick = onEquip,
-                enabled = isUnlocked && !isEquipped,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isEquipped) Color(0xFF00E5FF) else Color(0xFFFFD700),
-                    disabledContainerColor = Color(0xFF2A2A38)
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (isEquipped) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black)
-                        Text("EQUIPPED", color = Color.Black, fontWeight = FontWeight.Bold)
-                    }
-                } else if (isUnlocked) {
-                    Text("EQUIP BOARD", color = Color.Black, fontWeight = FontWeight.Bold)
-                } else {
-                    Text("LOCKED (LVL ${theme.unlockLevel})", color = Color.Gray, fontWeight = FontWeight.Bold)
-                }
+                Text("پالت رنگی:", color = Color.Gray, fontSize = 10.sp)
+                Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(Color(theme.pointColorLight)).border(0.5.dp, Color.White, CircleShape))
+                Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(Color(theme.pointColorDark)).border(0.5.dp, Color.White, CircleShape))
+                Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(Color(theme.accentGlowColor)).border(0.5.dp, Color.White, CircleShape))
+                Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(Color(theme.checkerWhiteColors.first())).border(0.5.dp, Color.White, CircleShape))
+                Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(Color(theme.checkerBlackColors.first())).border(0.5.dp, Color.White, CircleShape))
             }
         }
     }
