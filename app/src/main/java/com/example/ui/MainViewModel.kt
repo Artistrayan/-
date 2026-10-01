@@ -417,43 +417,168 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun handleGameOver(finalState: GameState) {
         viewModelScope.launch {
-            val isWhiteWin = (finalState.winner == PlayerColor.WHITE)
+            val stateWithScore = if (finalState.whiteMatchScore == 0 && finalState.blackMatchScore == 0 && finalState.winner != null) {
+                BackgammonRules.updateMatchScoreAfterGame(finalState)
+            } else {
+                finalState
+            }
+            _gameState.value = stateWithScore
+
+            val isWhiteWin = (stateWithScore.winner == PlayerColor.WHITE)
             val currentTheme = BoardThemes.getThemeById(userProfile.value.selectedBoardId)
+            val wonPoints = BackgammonRules.calculateWonPoints(stateWithScore)
+            val totalWonCoins = stateWithScore.matchBet * wonPoints
 
             repository.recordMatchResult(
-                opponentName = finalState.blackPlayerName,
-                bet = finalState.matchBet,
+                opponentName = stateWithScore.blackPlayerName,
+                bet = if (isWhiteWin) totalWonCoins else stateWithScore.matchBet,
                 isWin = isWhiteWin,
-                winType = finalState.winType.name,
-                movesCount = finalState.moveHistory.size,
+                winType = stateWithScore.winType.name,
+                movesCount = stateWithScore.moveHistory.size,
                 boardName = currentTheme.name
             )
 
-            _aiCommentary.value = if (isWhiteWin) {
-                "🏆 VICTORY! You won ${finalState.matchBet} coins with a ${finalState.winType} win!"
+            val persianWinType = when (stateWithScore.winType) {
+                WinType.NORMAL -> "برد معمولی (Single - ۱ امتیاز)"
+                WinType.GAMMON -> "برد مارسی (Gammon - ۲ امتیاز)"
+                WinType.BACKGAMMON -> "برد مارسی دوبل (Backgammon - ۳ امتیاز)"
+            }
+
+            if (stateWithScore.isMatchOver) {
+                val matchWon = stateWithScore.matchWinner == PlayerColor.WHITE
+                _aiCommentary.value = if (matchWon) {
+                    "🏆 تبریک! شما قهرمان مسابقه شدید! نتیجه نهایی: ${stateWithScore.whiteMatchScore} بر ${stateWithScore.blackMatchScore}"
+                } else {
+                    "💔 مسابقه به پایان رسید و حریف با نتیجه ${stateWithScore.blackMatchScore} بر ${stateWithScore.whiteMatchScore} پیروز شد."
+                }
             } else {
-                "💔 MATCH DEFEAT! Better luck next roll!"
+                _aiCommentary.value = if (isWhiteWin) {
+                    "🏆 پیروزی در این دست! $persianWinType با کیوب ${stateWithScore.doublingCubeValue}X ($wonPoints امتیاز مسابقه)."
+                } else {
+                    "💔 شکست در این دست! حریف $wonPoints امتیاز مسابقه کسب کرد."
+                }
             }
         }
     }
 
     fun offerDouble() {
         val state = _gameState.value ?: return
-        _gameState.value = BackgammonRules.doubleCube(state)
+        if (!BackgammonRules.canPlayerDouble(state, state.currentTurn)) {
+            _aiCommentary.value = "⚠️ در این نوبت امکان پیشنهاد دوبل وجود ندارد."
+            return
+        }
 
-        // If AI opponent, respond automatically
+        val updated = BackgammonRules.doubleCube(state)
+        _gameState.value = updated
+        _aiCommentary.value = "🎲 شما پیشنهاد دوبل (۲ برابر کردن امتیاز) دادید..."
+
+        // If AI opponent, evaluate offer
         if (state.gameMode in listOf(GameMode.AI_EASY, GameMode.AI_MEDIUM, GameMode.AI_HARD)) {
             viewModelScope.launch {
                 delay(1200)
-                val accepted = (Math.random() < 0.75)
-                val updated = BackgammonRules.respondToDouble(_gameState.value!!, accepted)
-                _gameState.value = updated
-                _aiCommentary.value = if (accepted) "🔥 AI Accepted the 2X Double!" else "🏳️ AI Forfeited the match!"
-                if (updated.isGameOver) {
-                    handleGameOver(updated)
+                val cur = _gameState.value ?: return@launch
+                if (!cur.doublingOffered) return@launch
+
+                val (wPip, bPip) = BackgammonRules.calculatePipCount(cur.points, cur.barWhite, cur.barBlack)
+                val accepted = (bPip <= wPip + 22)
+                val finalDoubleState = BackgammonRules.respondToDouble(cur, accepted)
+                _gameState.value = finalDoubleState
+                _aiCommentary.value = if (accepted) {
+                    "🔥 حریف پیشنهاد دوبل را پذیرفت (Take)! ارزش مکعب: ${finalDoubleState.doublingCubeValue}X"
+                } else {
+                    "🏳️ حریف بازی را واگذار کرد (Pass)!"
+                }
+                if (finalDoubleState.isGameOver) {
+                    handleGameOver(finalDoubleState)
                 }
             }
         }
+    }
+
+    fun respondToDouble(accepted: Boolean) {
+        val state = _gameState.value ?: return
+        if (!state.doublingOffered) return
+        val updated = BackgammonRules.respondToDouble(state, accepted)
+        _gameState.value = updated
+        _aiCommentary.value = if (accepted) {
+            "🔥 شما پیشنهاد دوبل را پذیرفتید (Take)! ارزش مکعب: ${updated.doublingCubeValue}X"
+        } else {
+            "🏳️ شما دست را واگذار کردید (Pass)."
+        }
+        if (updated.isGameOver) {
+            handleGameOver(updated)
+        }
+    }
+
+    fun offerResignation(type: WinType) {
+        val state = _gameState.value ?: return
+        if (state.isGameOver || state.isMatchOver) return
+
+        val updated = BackgammonRules.offerResignation(state, PlayerColor.WHITE, type)
+        _gameState.value = updated
+
+        val typeLabel = when (type) {
+            WinType.NORMAL -> "معمولی (Single)"
+            WinType.GAMMON -> "مارس (Gammon)"
+            WinType.BACKGAMMON -> "مارس دوبل (Backgammon)"
+        }
+        _aiCommentary.value = "🏳️ شما پیشنهاد تسلیم به صورت $typeLabel ارسال کردید..."
+
+        // AI opponent evaluation
+        if (state.gameMode in listOf(GameMode.AI_EASY, GameMode.AI_MEDIUM, GameMode.AI_HARD)) {
+            viewModelScope.launch {
+                delay(1000)
+                val cur = _gameState.value ?: return@launch
+                if (cur.resignationOfferedBy != PlayerColor.WHITE) return@launch
+
+                val aiAccepts = when (type) {
+                    WinType.BACKGAMMON, WinType.GAMMON -> true
+                    WinType.NORMAL -> {
+                        // AI only declines single if it has a dominating gammon chance
+                        !(cur.offWhite == 0 && cur.offBlack >= 8)
+                    }
+                }
+
+                val result = BackgammonRules.respondToResignation(cur, aiAccepts)
+                _gameState.value = result
+
+                if (aiAccepts) {
+                    _aiCommentary.value = "🏳️ حریف پیشنهاد تسلیم $typeLabel شما را پذیرفت."
+                    handleGameOver(result)
+                } else {
+                    _aiCommentary.value = "⚔️ حریف تسلیم معمولی شما را رد کرد و برای برد مارس ادامه می‌دهد!"
+                }
+            }
+        }
+    }
+
+    fun respondToResignation(accepted: Boolean) {
+        val state = _gameState.value ?: return
+        if (state.resignationOfferedBy == null) return
+        val result = BackgammonRules.respondToResignation(state, accepted)
+        _gameState.value = result
+        if (accepted && result.isGameOver) {
+            handleGameOver(result)
+        }
+    }
+
+    fun startNextGame() {
+        val state = _gameState.value ?: return
+        if (state.isMatchOver) return
+        undoStack.clear()
+        val next = BackgammonRules.startNextGameInMatch(state)
+        _gameState.value = next
+        _aiCommentary.value = "🎲 بازی شماره ${next.gameNumber} مسابقه آغاز شد! برای تعیین شروع‌کننده تاس بریزید."
+        startTurnTimer()
+    }
+
+    fun resetMatch() {
+        val state = _gameState.value ?: return
+        undoStack.clear()
+        val reset = BackgammonRules.resetMatch(state)
+        _gameState.value = reset
+        _aiCommentary.value = "🔄 مسابقه جدید آغاز شد! برای تعیین شروع‌کننده تاس بریزید."
+        startTurnTimer()
     }
 
     fun sendChatMessage(msg: String) {

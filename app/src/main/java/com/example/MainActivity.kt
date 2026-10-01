@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.model.WinType
 import com.example.ui.MainViewModel
 import com.example.ui.screens.*
 import com.example.ui.theme.MyApplicationTheme
@@ -43,6 +45,12 @@ class MainActivity : ComponentActivity() {
                     val friendsList by viewModel.friendsList.collectAsState()
 
                     var currentScreen by remember { mutableStateOf(AppScreen.HOME) }
+
+                    // Lock entire application orientation to Landscape (Horizontal)
+                    DisposableEffect(Unit) {
+                        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                        onDispose { }
+                    }
 
                     // Auto switch to GAME screen when gameState is active
                     LaunchedEffect(gameState) {
@@ -87,6 +95,11 @@ class MainActivity : ComponentActivity() {
                                     onUndoClick = { viewModel.undoLastMove() },
                                     onConfirmTurn = { viewModel.confirmTurn() },
                                     onSendChat = { msg -> viewModel.sendChatMessage(msg) },
+                                    onOfferResign = { type -> viewModel.offerResignation(type) },
+                                    onRespondResign = { accepted -> viewModel.respondToResignation(accepted) },
+                                    onRespondDouble = { accepted -> viewModel.respondToDouble(accepted) },
+                                    onStartNextGame = { viewModel.startNextGame() },
+                                    onResetMatch = { viewModel.resetMatch() },
                                     onExitGame = {
                                         viewModel.exitGame()
                                         currentScreen = AppScreen.HOME

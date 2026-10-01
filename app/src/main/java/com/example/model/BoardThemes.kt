@@ -1,22 +1,25 @@
 package com.example.model
 
+import com.example.config.CustomGameThemeConfig
+
 object BoardThemes {
-    val ALL_THEMES = listOf(
-        BoardTheme(
-            id = 1,
-            name = "Mythic Dragon (Cyan & Gold)",
-            unlockLevel = 1,
-            description = "Ancient Cyan Dragon & Imperial 24K Gold Dragon with glowing neon points and obsidian checkers.",
-            boardBackgroundColors = listOf(0xFF0F141C, 0xFF080B10),
-            woodBorderColor = 0xFF181C26,
-            pointColorLight = 0xFF00E5FF,
-            pointColorDark = 0xFFFFD700,
-            checkerWhiteColors = listOf(0xFF00E5FF, 0xFF0052CC),
-            checkerBlackColors = listOf(0xFFFFD700, 0xFFD4AF37),
-            accentGlowColor = 0xFF00E5FF,
-            particleColor = 0x8800E5FF,
-            iconEmoji = "🐉"
-        ),
+    val ALL_THEMES: List<BoardTheme>
+        get() = listOf(
+            BoardTheme(
+                id = 1,
+                name = "Mythic Dragon (پوسته سفارشی)",
+                unlockLevel = 1,
+                description = "پوسته سفارشی کاربر که در فایل CustomGameThemeConfig.kt قابل شخصی‌سازی است.",
+                boardBackgroundColors = CustomGameThemeConfig.boardFloorGradient,
+                woodBorderColor = CustomGameThemeConfig.boardWoodBorderColor,
+                pointColorLight = CustomGameThemeConfig.pointColorLight,
+                pointColorDark = CustomGameThemeConfig.pointColorDark,
+                checkerWhiteColors = CustomGameThemeConfig.player1CheckerGradient,
+                checkerBlackColors = CustomGameThemeConfig.player2CheckerGradient,
+                accentGlowColor = CustomGameThemeConfig.pointColorLight,
+                particleColor = 0x8800E5FF,
+                iconEmoji = "🐉"
+            ),
         BoardTheme(
             id = 2,
             name = "Emerald Marble",

@@ -7,7 +7,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +22,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -32,8 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import com.example.R
+import com.example.config.CustomGameThemeConfig
 import com.example.data.UserEntity
 import com.example.model.GameMode
 import com.example.ui.components.GlassCard
@@ -53,7 +51,6 @@ fun HomeScreen(
     val context = LocalContext.current
     val defaultBet = 100L
 
-    // Dialog state controllers
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
     var showSupportDialog by remember { mutableStateOf(false) }
@@ -62,540 +59,331 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF07070B))
+            .background(Color(0xFF14121A))
     ) {
-        // 1. Cinematic 8K Ultra-realistic Background
+        // 1. Cinematic Background Art (Bright and clear)
         Image(
-            painter = painterResource(id = R.drawable.luxury_backgammon_splash_1789937987492),
+            painter = painterResource(id = CustomGameThemeConfig.homeBackgroundDrawable),
             contentDescription = "Casino Background",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
 
-        // 2. Clear Ambient Overlay for Maximum Visual Clarity & Richness
+        // 2. Light Ambient Overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.verticalGradient(
+                    Brush.radialGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.35f),
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.65f)
+                            Color.Black.copy(alpha = 0.22f)
                         )
                     )
                 )
         )
 
-        // 3. Floating Golden Light Particles Animation (AAA Unreal Engine Atmosphere)
+        // 3. Floating Golden Light Particles
         FloatingGoldenParticles()
 
-        // 4. Main Layout Container
+        // 4. Main Layout (Exact Match to Reference Image 2)
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
+                .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ==========================================
-            // TOP BAR: Profile | Logo | Wallet
-            // ==========================================
+            // =========================================================================
+            // TOP: ORNATE TITLE & CROWN HEADER (Matching Image 2)
+            // =========================================================================
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                // Crown / Filigree ornament above title
+                Text("👑 ✦ 👑", fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "تخته نرد",
+                    color = Color(0xFFFFD700),
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Black,
+                    style = TextStyle(
+                        shadow = Shadow(
+                            color = Color(0xFFFF9100),
+                            blurRadius = 20f
+                        )
+                    )
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "بازی سنتی، رقابت هوشمند",
+                    color = Color(0xFFFFE082),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // =========================================================================
+            // CENTER: 3-COLUMN MASTER LAYOUT (Left Game Cards | Center Board | Right Profile & Daily Reward)
+            // =========================================================================
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .weight(1f)
+                    .padding(vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // LEFT: Profile Avatar with Gold VIP Crown + Username + Level Badge
-                GlassCard(
-                    modifier = Modifier.clickable { onNavigateToProfile() },
-                    cornerRadius = 24.dp,
-                    backgroundColor = Color(0xFF14131E).copy(alpha = 0.75f),
-                    borderColor = Color(0xFFFFD700).copy(alpha = 0.35f)
+                // LEFT SIDE: 3 Stacked Game Mode Cards (Matching Image 2)
+                Column(
+                    modifier = Modifier
+                        .width(240.dp)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    HomeGameModeCard(
+                        title = "بازی جدید",
+                        subtitle = "شروع بازی سریع",
+                        icon = "⚔️",
+                        accentColor = Color(0xFFFFD700),
+                        onClick = { onStartMatch(defaultBet, GameMode.ONLINE_QUICK) }
+                    )
+                    HomeGameModeCard(
+                        title = "بازی آنلاین",
+                        subtitle = "حریف واقعی",
+                        icon = "👥",
+                        accentColor = Color(0xFF00E5FF),
+                        onClick = { onStartMatch(defaultBet, GameMode.ONLINE_QUICK) }
+                    )
+                    HomeGameModeCard(
+                        title = "بازی با کامپیوتر",
+                        subtitle = "هوش مصنوعی",
+                        icon = "🤖",
+                        accentColor = Color(0xFFC084FC),
+                        onClick = { onStartMatch(defaultBet, GameMode.AI_MEDIUM) }
+                    )
+                }
+
+                // CENTER: Atmospheric Wood Board Preview Vignette
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFF110E08).copy(alpha = 0.5f))
+                            .border(1.dp, Color(0xFFFFD700).copy(alpha = 0.2f), RoundedCornerShape(16.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        // Avatar Circle with Crown Badge on Top
-                        Box(contentAlignment = Alignment.TopEnd) {
+                        Text(
+                            text = "⚜️ میز امپراتوری اژدها ⚜️",
+                            color = Color(0xFFFFD700).copy(alpha = 0.7f),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // RIGHT SIDE: Profile Card & Daily Reward Card (Matching Image 2)
+                Column(
+                    modifier = Modifier
+                        .width(240.dp)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    // 1. Profile Card
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFF1C170C), Color(0xFF0A0D14))
+                                )
+                            )
+                            .border(1.5.dp, Color(0xFFFFD700).copy(alpha = 0.6f), RoundedCornerShape(18.dp))
+                            .clickable { onNavigateToProfile() }
+                            .padding(14.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .size(46.dp)
+                                    .size(52.dp)
                                     .clip(CircleShape)
                                     .background(
                                         Brush.radialGradient(
-                                            listOf(Color(0xFFFFDF00), Color(0xFF996515))
+                                            listOf(Color(0xFFFFD700), Color(0xFF8B6508))
                                         )
                                     )
                                     .border(2.dp, Color(0xFFFFE082), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(getAvatarEmoji(user.avatarId), fontSize = 22.sp)
+                                Text(getAvatarEmoji(user.avatarId), fontSize = 26.sp)
                             }
-                            // Gold VIP Crown Over Avatar
-                            Text(
-                                text = "👑",
-                                fontSize = 14.sp,
-                                modifier = Modifier.offset(x = 4.dp, y = (-5).dp)
-                            )
-                        }
 
-                        // Username & Badges
-                        Column(verticalArrangement = Arrangement.Center) {
-                            Text(
-                                text = user.username,
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                style = TextStyle(
-                                    shadow = Shadow(color = Color.Black, blurRadius = 6f)
+                            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(
+                                    text = user.username,
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "سطح ${user.level}",
+                                    color = Color(0xFFFFD700),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                LinearProgressIndicator(
+                                    progress = { ((user.xp % 1000) / 1000f).coerceIn(0f, 1f) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
+                                    color = Color(0xFFFFD700),
+                                    trackColor = Color(0xFF1E2433)
+                                )
+                            }
+                        }
+                    }
+
+                    // 2. Daily Reward Card (جایزه روزانه)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFF1C170C), Color(0xFF0A0D14))
                                 )
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            .border(1.5.dp, Color(0xFFFFD700).copy(alpha = 0.6f), RoundedCornerShape(18.dp))
+                            .padding(14.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("جایزه روزانه", color = Color(0xFFFFE082), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Surface(
-                                    color = Color(0xFFFFD700),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = "VIP",
-                                        color = Color.Black,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                                    )
-                                }
-                                Surface(
-                                    color = Color(0xFF262438),
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
-                                ) {
-                                    Text(
-                                        text = "LVL ${user.level}",
-                                        color = Color(0xFFFFE082),
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // CENTER: Luxurious Gold Calligraphy Logo with Royal Dragon Insignia & "HIGH STAKES" Tag
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.royal_dragon_insignia_1790547059357),
-                        contentDescription = "نشان سلطنتی اژدها",
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(CircleShape)
-                            .border(1.5.dp, Color(0xFFFFD700), CircleShape)
-                    )
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "تخته‌نرد سلطنتی اژدها",
-                            color = Color(0xFFFFDF00),
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            style = TextStyle(
-                                shadow = Shadow(
-                                    color = Color(0xFFFFB300).copy(alpha = 0.8f),
-                                    blurRadius = 18f
-                                )
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Surface(
-                            color = Color(0xFF0F1420).copy(alpha = 0.85f),
-                            shape = RoundedCornerShape(10.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.7f))
-                        ) {
-                            Text(
-                                text = "✦ ROYAL DRAGON VIP ✦",
-                                color = Color(0xFF00E5FF),
-                                fontSize = 8.sp,
-                                letterSpacing = 1.5.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                }
-
-                // RIGHT: Wallet Balance with Coin & Gem Chips + Glowing "شارژ" Button
-                GlassCard(
-                    cornerRadius = 24.dp,
-                    backgroundColor = Color(0xFF14131E).copy(alpha = 0.85f),
-                    borderColor = Color(0xFFFFD700).copy(alpha = 0.45f)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Column(
-                            verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.clickable { onNavigateToShop() }
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text("🪙", fontSize = 14.sp)
+                                Text("🪙", fontSize = 20.sp)
                                 Text(
-                                    text = "${user.coins}",
+                                    text = "+50",
                                     color = Color(0xFFFFD700),
-                                    fontSize = 12.sp,
+                                    fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold
                                 )
                             }
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text("💎", fontSize = 14.sp)
-                                Text(
-                                    text = "${user.gems}",
-                                    color = Color(0xFF00E5FF),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                            }
-                        }
 
-                        // Glowing Charge Button
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    Brush.horizontalGradient(
-                                        listOf(Color(0xFFFFD700), Color(0xFFFF9100))
-                                    )
-                                )
-                                .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                                .clickable { onNavigateToShop() }
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "+ شارژ",
-                                color = Color.Black,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
+                            Button(
+                                onClick = {
+                                    onClaimDaily { success, amount ->
+                                        if (success) {
+                                            Toast.makeText(context, "🎉 جایزه روزانه +$amount دریافت شد!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "⏳ امروز جایزه خود را دریافت کرده‌اید!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(36.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("دریافت", color = Color.Black, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                            }
                         }
                     }
                 }
             }
 
-            // ==========================================
-            // STAKE / BET SELECTOR BAR
-            // ==========================================
-            var selectedBet by remember { mutableStateOf(100L) }
-            val betOptions = listOf(100L, 1000L, 10000L, 50000L)
-
+            // =========================================================================
+            // BOTTOM NAVIGATION BAR (Matching Reference Image 2: فروشگاه، مأموریت‌ها، رتبه‌بندی، تنظیمات)
+            // =========================================================================
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    .height(64.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0xFF10131D).copy(alpha = 0.95f))
+                    .border(1.5.dp, Color(0xFFFFD700).copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "میز شرط‌بندی:",
-                    color = Color(0xFFFFE082),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                betOptions.forEach { betVal ->
-                    val isChosen = (selectedBet == betVal)
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (isChosen) {
-                                    Brush.horizontalGradient(
-                                        listOf(Color(0xFFFFD700), Color(0xFFFF9100))
-                                    )
-                                } else {
-                                    Brush.horizontalGradient(
-                                        listOf(Color(0xFF161C2A), Color(0xFF1E283C))
-                                    )
-                                }
-                            )
-                            .border(
-                                1.dp,
-                                if (isChosen) Color.White else Color(0xFFFFD700).copy(alpha = 0.3f),
-                                RoundedCornerShape(10.dp)
-                            )
-                            .clickable { selectedBet = betVal }
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "🪙 ${if (betVal >= 1000) "${betVal / 1000}K" else "$betVal"}",
-                            color = if (isChosen) Color.Black else Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
+                HomeBottomNavItem(icon = "🛒", label = "فروشگاه", onClick = onNavigateToShop)
+                HomeBottomNavItem(icon = "📜", label = "مأموریت‌ها", onClick = { showDailyGiftDialog = true })
+                HomeBottomNavItem(icon = "🏆", label = "رتبه‌بندی", onClick = onNavigateToLeaderboard)
+                HomeBottomNavItem(icon = "⚙️", label = "تنظیمات", onClick = { showSettingsDialog = true })
+            }
+        }
+    }
+
+    // Dialogs
+    if (showSettingsDialog) {
+        LuxurySettingsDialog(onDismiss = { showSettingsDialog = false })
+    }
+    if (showDailyGiftDialog) {
+        DailyGiftDialog(
+            onClaim = {
+                onClaimDaily { success, amount ->
+                    if (success) {
+                        Toast.makeText(context, "🎁 هدیه مأموریت +$amount دریافت شد!", Toast.LENGTH_SHORT).show()
+                        showDailyGiftDialog = false
+                    } else {
+                        Toast.makeText(context, "⏳ قبلاً دریافت شده است!", Toast.LENGTH_SHORT).show()
                     }
                 }
-            }
-
-            // ==========================================
-            // MAIN CONTENT: 3 Wide Horizontal Game Mode Cards (Image 2 style)
-            // ==========================================
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // Card 1: LIVE ONLINE (Cyan Neon)
-                GameModeHorizontalCard(
-                    badge = "LIVE ONLINE",
-                    title = "بازی آنلاین دو نفره",
-                    subtitle = "رقابت زنده با بازیکنان سراسر جهان",
-                    icon = "🌐",
-                    neonColor = Color(0xFF00E5FF),
-                    onClick = {
-                        if (user.coins >= selectedBet) {
-                            onStartMatch(selectedBet, GameMode.ONLINE_QUICK)
-                        } else {
-                            Toast.makeText(context, "سکه کافی نیست! از منوی شارژ سکه تهیه کنید.", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-
-                // Card 2: PRACTICE (Purple Neon)
-                GameModeHorizontalCard(
-                    badge = "GRANDMASTER AI",
-                    title = "نبرد با هوش مصنوعی",
-                    subtitle = "مبارزه با هوش مصنوعی اژدها در ۳ سطح",
-                    icon = "🤖",
-                    neonColor = Color(0xFFC084FC),
-                    onClick = {
-                        if (user.coins >= selectedBet) {
-                            onStartMatch(selectedBet, GameMode.AI_MEDIUM)
-                        } else {
-                            Toast.makeText(context, "سکه کافی نیست!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-
-                // Card 3: HIGH STAKES (Gold Neon)
-                GameModeHorizontalCard(
-                    badge = "DRAGON LEAGUE",
-                    title = "جام قهرمانان اژدها",
-                    subtitle = "میزهای سنگین سلطنتی و جوایز میلیونی",
-                    icon = "💎",
-                    neonColor = Color(0xFFFFD700),
-                    onClick = {
-                        if (user.coins >= selectedBet) {
-                            onStartMatch(selectedBet, GameMode.TOURNAMENT)
-                        } else {
-                            Toast.makeText(context, "سکه کافی برای ورود به تورنمنت ندارید!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-            }
-
-            // ==========================================
-            // BOTTOM NAVIGATION BAR
-            // ==========================================
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(68.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color(0xFF141224).copy(alpha = 0.90f),
-                                Color(0xFF090812).copy(alpha = 0.96f)
-                            )
-                        )
-                    )
-                    .border(
-                        width = 1.2.dp,
-                        brush = Brush.horizontalGradient(
-                            listOf(
-                                Color(0xFFFFD700).copy(alpha = 0.4f),
-                                Color(0xFF00E5FF).copy(alpha = 0.4f),
-                                Color(0xFFFFD700).copy(alpha = 0.4f)
-                            )
-                        ),
-                        shape = RoundedCornerShape(22.dp)
-                    )
-            ) {
-                // Top Glowing Accent Line
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color.Transparent,
-                                    Color(0xFFFFD700).copy(alpha = 0.8f),
-                                    Color(0xFF00E5FF).copy(alpha = 0.8f),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BottomNavButton(
-                        icon = Icons.Default.Person,
-                        label = "پروفایل",
-                        accentColor = Color(0xFF00E5FF),
-                        onClick = onNavigateToProfile
-                    )
-                    BottomNavButton(
-                        icon = Icons.Default.ShoppingCart,
-                        label = "فروشگاه",
-                        accentColor = Color(0xFFFFD700),
-                        onClick = onNavigateToShop
-                    )
-                    BottomNavButton(
-                        icon = Icons.Default.Dashboard,
-                        label = "تخته‌ها",
-                        accentColor = Color(0xFF00E676),
-                        onClick = onNavigateToBoards
-                    )
-                    BottomNavButton(
-                        icon = Icons.Default.CardGiftcard,
-                        label = "هدایا",
-                        accentColor = Color(0xFFFF4081),
-                        isBadgeActive = true,
-                        onClick = { showDailyGiftDialog = true }
-                    )
-                    BottomNavButton(
-                        icon = Icons.Default.Leaderboard,
-                        label = "رتبه‌بندی",
-                        accentColor = Color(0xFFFFAB00),
-                        onClick = onNavigateToLeaderboard
-                    )
-                    BottomNavButton(
-                        icon = Icons.Default.Settings,
-                        label = "تنظیمات",
-                        accentColor = Color(0xFFB0BEC5),
-                        onClick = { showSettingsDialog = true }
-                    )
-                    BottomNavButton(
-                        icon = Icons.Default.Headset,
-                        label = "پشتیبانی",
-                        accentColor = Color(0xFF80DEEA),
-                        onClick = { showSupportDialog = true }
-                    )
-                }
-            }
-        }
-
-        // ==========================================
-        // DIALOGS: Settings | Gifts | History | Support
-        // ==========================================
-
-        // 1. Settings Dialog
-        if (showSettingsDialog) {
-            LuxurySettingsDialog(
-                onDismiss = { showSettingsDialog = false }
-            )
-        }
-
-        // 2. Daily Gift Dialog
-        if (showDailyGiftDialog) {
-            DailyGiftDialog(
-                onClaim = {
-                    onClaimDaily { success, amount ->
-                        if (success) {
-                            Toast.makeText(context, "🎉 هدیه +$amount سکه دریافت شد!", Toast.LENGTH_LONG).show()
-                            showDailyGiftDialog = false
-                        } else {
-                            Toast.makeText(context, "⏳ هدیه روزانه امروز را قبلاً دریافت کرده‌اید!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                },
-                onDismiss = { showDailyGiftDialog = false }
-            )
-        }
-
-        // 3. Match History Dialog
-        if (showHistoryDialog) {
-            MatchHistoryModal(
-                user = user,
-                onDismiss = { showHistoryDialog = false }
-            )
-        }
-
-        // 4. Support Dialog
-        if (showSupportDialog) {
-            VipSupportDialog(
-                onDismiss = { showSupportDialog = false }
-            )
-        }
+            },
+            onDismiss = { showDailyGiftDialog = false }
+        )
     }
 }
 
-// =========================================================================
-// WIDE HORIZONTAL GAME MODE CARD (Image 2 style)
-// =========================================================================
 @Composable
-fun GameModeHorizontalCard(
-    badge: String,
+fun HomeGameModeCard(
     title: String,
     subtitle: String,
     icon: String,
-    neonColor: Color,
+    accentColor: Color,
     onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(76.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .height(64.dp)
+            .clip(RoundedCornerShape(16.dp))
             .background(
                 Brush.horizontalGradient(
-                    colors = listOf(
-                        Color(0xFF161525).copy(alpha = 0.92f),
-                        Color(0xFF0C0E18).copy(alpha = 0.97f)
-                    )
+                    listOf(Color(0xFF1C170C), Color(0xFF0A0D14))
                 )
             )
             .border(
-                width = 1.6.dp,
-                brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        neonColor.copy(alpha = 0.9f),
-                        neonColor.copy(alpha = 0.4f),
-                        neonColor.copy(alpha = 0.8f)
-                    )
+                1.5.dp,
+                Brush.horizontalGradient(
+                    listOf(accentColor.copy(alpha = 0.8f), accentColor.copy(alpha = 0.3f))
                 ),
-                shape = RoundedCornerShape(18.dp)
+                RoundedCornerShape(16.dp)
             )
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp),
@@ -604,382 +392,125 @@ fun GameModeHorizontalCard(
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.2f))
+                    .border(1.dp, accentColor, CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(neonColor.copy(alpha = 0.2f))
-                        .border(1.dp, neonColor.copy(alpha = 0.7f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(icon, fontSize = 24.sp)
-                }
-
-                Column(verticalArrangement = Arrangement.Center) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Surface(
-                            color = neonColor.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                badge,
-                                color = neonColor,
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                            )
-                        }
-                        Text(
-                            title,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        subtitle,
-                        color = Color.LightGray.copy(alpha = 0.8f),
-                        fontSize = 11.sp
-                    )
-                }
+                Text(icon, fontSize = 20.sp)
             }
 
-            // Start Button
-            Surface(
-                color = neonColor,
-                shape = RoundedCornerShape(12.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.Center) {
                 Text(
-                    "شروع بازی",
-                    color = Color.Black,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    text = title,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    color = Color.Gray,
+                    fontSize = 11.sp
                 )
             }
         }
     }
 }
 
-// =========================================================================
-// BOTTOM NAVIGATION ITEM (Comfortable touch target + label + optional badge)
-// =========================================================================
 @Composable
-fun BottomNavButton(
-    icon: ImageVector,
-    label: String,
-    accentColor: Color,
-    isBadgeActive: Boolean = false,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+fun HomeBottomNavItem(icon: String, label: String, onClick: () -> Unit) {
+    Row(
         modifier = Modifier
-            .fillMaxHeight()
-            .width(62.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = false, radius = 28.dp),
-                onClick = onClick
-            )
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Box(contentAlignment = Alignment.TopEnd) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = accentColor,
-                modifier = Modifier.size(24.dp)
-            )
-            if (isBadgeActive) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .offset(x = 3.dp, y = (-2).dp)
-                        .clip(CircleShape)
-                        .background(Color.Red)
-                        .border(1.dp, Color.White, CircleShape)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(
-            text = label,
-            color = Color.White.copy(alpha = 0.85f),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Text(icon, fontSize = 18.sp)
+        Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
 
-// =========================================================================
-// FLOATING PARTICLES CANVAS (Subtle Golden Sparkles & Volumetric Atmosphere)
-// =========================================================================
 @Composable
-fun FloatingGoldenParticles() {
+private fun FloatingGoldenParticles() {
     val infiniteTransition = rememberInfiniteTransition(label = "particles")
-    val phase by infiniteTransition.animateFloat(
+    val animProgress by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 6.283f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 9000, easing = LinearEasing),
+            animation = tween(4000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "phase"
+        label = "progress"
     )
 
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val w = size.width
-        val h = size.height
+        val width = size.width
+        val height = size.height
+        val particleCount = 20
 
-        val particlePositions = listOf(
-            Offset(0.12f, 0.25f),
-            Offset(0.28f, 0.65f),
-            Offset(0.42f, 0.35f),
-            Offset(0.58f, 0.75f),
-            Offset(0.72f, 0.20f),
-            Offset(0.85f, 0.60f),
-            Offset(0.93f, 0.40f),
-            Offset(0.20f, 0.80f),
-            Offset(0.68f, 0.85f),
-            Offset(0.35f, 0.15f)
-        )
-
-        particlePositions.forEachIndexed { index, normPos ->
-            val offsetFactor = sin(phase + index.toFloat()) * 18f
-            val px = normPos.x * w + (offsetFactor * 0.5f)
-            val py = (normPos.y * h - (phase * 15f)) % h
-            val finalY = if (py < 0) py + h else py
-            val alpha = (0.25f + 0.35f * sin(phase + index.toFloat())).coerceIn(0.1f, 0.8f)
-
+        for (i in 0 until particleCount) {
+            val x = (i * 137.5f) % width
+            val y = (height - ((animProgress * height + i * 50f) % height))
+            val radius = (i % 3 + 1).dp.toPx()
             drawCircle(
-                color = Color(0xFFFFD700).copy(alpha = alpha),
-                radius = (2.5f + (index % 3) * 1.5f),
-                center = Offset(px, finalY)
+                color = Color(0xFFFFD700).copy(alpha = ((i % 5 + 1) * 0.12f)),
+                radius = radius,
+                center = Offset(x, y)
             )
         }
     }
 }
-
-// =========================================================================
-// MODALS / DIALOGS: Settings, Gifts, History, Support
-// =========================================================================
 
 @Composable
 fun LuxurySettingsDialog(onDismiss: () -> Unit) {
-    var soundEnabled by remember { mutableStateOf(true) }
-    var musicEnabled by remember { mutableStateOf(true) }
-    var vibrationEnabled by remember { mutableStateOf(true) }
-
-    Dialog(onDismissRequest = onDismiss) {
-        GlassCard(
-            modifier = Modifier
-                .width(420.dp)
-                .wrapContentHeight(),
-            cornerRadius = 24.dp,
-            backgroundColor = Color(0xFF141320),
-            borderColor = Color(0xFFFFD700).copy(alpha = 0.4f)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "⚙️ تنظیمات بازی",
-                    color = Color(0xFFFFD700),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                SettingRow(title = "صدای بازی و تاس", state = soundEnabled, onToggle = { soundEnabled = it })
-                SettingRow(title = "موسیقی متن لوکس", state = musicEnabled, onToggle = { musicEnabled = it })
-                SettingRow(title = "لرزش (هپتیک)", state = vibrationEnabled, onToggle = { vibrationEnabled = it })
-
-                Spacer(modifier = Modifier.height(4.dp))
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("بستن و ذخیره", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF141722),
+        title = { Text("تنظیمات بازی", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("• صدا و موسیقی: فعال", color = Color.White, fontSize = 12.sp)
+                Text("• لرزش گوشی: روشن", color = Color.White, fontSize = 12.sp)
+                Text("• نسخه بازی: 1.0.4 پرو", color = Color.Gray, fontSize = 11.sp)
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))) {
+                Text("تایید", color = Color.Black, fontWeight = FontWeight.Bold)
             }
         }
-    }
-}
-
-@Composable
-fun SettingRow(title: String, state: Boolean, onToggle: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-        Switch(
-            checked = state,
-            onCheckedChange = onToggle,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.Black,
-                checkedTrackColor = Color(0xFFFFD700)
-            )
-        )
-    }
+    )
 }
 
 @Composable
 fun DailyGiftDialog(onClaim: () -> Unit, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        GlassCard(
-            modifier = Modifier
-                .width(380.dp)
-                .wrapContentHeight(),
-            cornerRadius = 24.dp,
-            backgroundColor = Color(0xFF1B1425),
-            borderColor = Color(0xFFFF4081).copy(alpha = 0.5f)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text("🎁", fontSize = 48.sp)
-                Text(
-                    text = "صندوق پاداش روزانه",
-                    color = Color(0xFFFFD700),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "هر ۲۴ ساعت می‌توانید ۵,۰۰۰ سکه رایگان دریافت کنید!",
-                    color = Color.LightGray,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Button(
-                    onClick = onClaim,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4081)),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("دریافت ۵,۰۰۰ سکه هدیه", color = Color.White, fontWeight = FontWeight.Bold)
-                }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF141722),
+        title = { Text("جایزه و مأموریت روزانه", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("🎁 هدیه ویژه ورود روزانه آماده دریافت است!", color = Color.White, fontSize = 13.sp)
+                Text("مقدار پاداش: 🪙 50 سکه", color = Color(0xFFFFD700), fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
-        }
-    }
-}
-
-@Composable
-fun MatchHistoryModal(user: UserEntity, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        GlassCard(
-            modifier = Modifier
-                .width(420.dp)
-                .wrapContentHeight(),
-            cornerRadius = 24.dp,
-            backgroundColor = Color(0xFF13131F),
-            borderColor = Color(0xFFC084FC).copy(alpha = 0.4f)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "📜 آمار و تاریخچه بازی‌ها",
-                    color = Color(0xFFC084FC),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    val matchCount = user.totalMatches
-                    val winCount = user.wins
-                    val winRate = if (matchCount > 0) (winCount * 100) / matchCount else 0
-                    StatTile("تعداد بازی", "$matchCount")
-                    StatTile("پیروزی‌ها", "$winCount", Color(0xFF00E676))
-                    StatTile("درصد برد", "$winRate%", Color(0xFFFFD700))
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC084FC)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("بستن", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
+        },
+        confirmButton = {
+            Button(onClick = onClaim, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))) {
+                Text("دریافت جایزه", color = Color.Black, fontWeight = FontWeight.Bold)
             }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("بعداً", color = Color.Gray) }
         }
-    }
-}
-
-@Composable
-fun StatTile(title: String, value: String, valueColor: Color = Color.White) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(title, color = Color.Gray, fontSize = 11.sp)
-        Text(value, color = valueColor, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun VipSupportDialog(onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        GlassCard(
-            modifier = Modifier
-                .width(380.dp)
-                .wrapContentHeight(),
-            cornerRadius = 24.dp,
-            backgroundColor = Color(0xFF101918),
-            borderColor = Color(0xFF00E676).copy(alpha = 0.4f)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text("🎧", fontSize = 42.sp)
-                Text(
-                    text = "پشتیبانی اختصاصی VIP",
-                    color = Color(0xFF00E676),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "پشتیبانی ۲۴ ساعته آنلاین برای تمامی سوالات و پیگیری امور مالی و تورنمنت‌ها.",
-                    color = Color.LightGray,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("ارسال تیکت / تماس با پشتیبان", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
+    )
 }
 
 fun getAvatarEmoji(avatarId: Int): String {

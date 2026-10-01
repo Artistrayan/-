@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.config.CustomGameThemeConfig
 import com.example.model.DiceRoll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -424,7 +425,8 @@ fun Single3DDieCube(
     size: Dp = 40.dp
 ) {
     val alpha = if (isUsed) 0.35f else 1.0f
-    val neonColor = Color(0xFF00E5FF)
+    val neonColor = CustomGameThemeConfig.composeDiceBorderColor
+    val pipColor = if (isUsed) CustomGameThemeConfig.composeDiceUsedColor else CustomGameThemeConfig.composeDicePipColor
 
     Box(
         modifier = Modifier
@@ -433,20 +435,14 @@ fun Single3DDieCube(
                 elevation = if (isUsed) 2.dp else 12.dp,
                 shape = RoundedCornerShape(10.dp),
                 ambientColor = Color.Black,
-                spotColor = neonColor
+                spotColor = CustomGameThemeConfig.composeDiceGlowColor
             )
             .clip(RoundedCornerShape(10.dp))
             .background(
                 if (isUsed) {
                     Brush.linearGradient(listOf(Color(0xFF1E212B), Color(0xFF111319)))
                 } else {
-                    Brush.linearGradient(
-                        listOf(
-                            Color(0xFF262E3E),
-                            Color(0xFF171B26),
-                            Color(0xFF0C0E14)
-                        )
-                    )
+                    Brush.linearGradient(CustomGameThemeConfig.composeDiceBodyColors)
                 }
             )
             .border(
@@ -509,7 +505,7 @@ fun Single3DDieCube(
 
         DieDotsLayout(
             value = value,
-            dotColor = if (isUsed) Color.Gray else neonColor
+            dotColor = pipColor
         )
     }
 }

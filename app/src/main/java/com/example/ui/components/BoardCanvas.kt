@@ -111,12 +111,12 @@ fun BoardCanvas(
         // ==========================================================
         // 1. BOARD FRAME & PLAYFIELD GEOMETRY
         // ==========================================================
-        val frameMarginX = w * 0.022f
-        val frameMarginY = h * 0.028f
+        val frameMarginX = w * 0.008f
+        val frameMarginY = h * 0.008f
         val frameW = w - (frameMarginX * 2)
         val frameH = h - (frameMarginY * 2)
 
-        val frameBorderThickness = min(frameW * 0.038f, frameH * 0.068f)
+        val frameBorderThickness = min(frameW * 0.034f, frameH * 0.060f)
         val innerPlayX = frameMarginX + frameBorderThickness
         val innerPlayY = frameMarginY + frameBorderThickness
         val innerPlayW = frameW - (frameBorderThickness * 2)

@@ -73,7 +73,21 @@ data class GameState(
     val blackBankSeconds: Int = 30,
     val isUsingBankTime: Boolean = false,
     val isRollingForTurn: Boolean = false,
-    val openingRoll: Pair<Int, Int>? = null // (White die, Black die) for turn decider
+    val openingRoll: Pair<Int, Int>? = null, // (White die, Black die) for turn decider
+    val matchTargetScore: Int = 5,
+    val whiteMatchScore: Int = 0,
+    val blackMatchScore: Int = 0,
+    val isCrawfordGame: Boolean = false,
+    val crawfordPassed: Boolean = false,
+    val jacobyRuleEnabled: Boolean = true,
+    val gammonsEnabled: Boolean = true,
+    val backgammonsEnabled: Boolean = true,
+    val maxCubeValue: Int = 64,
+    val resignationOfferedBy: PlayerColor? = null,
+    val resignationType: WinType? = null,
+    val isMatchOver: Boolean = false,
+    val matchWinner: PlayerColor? = null,
+    val gameNumber: Int = 1
 )
 
 data class BoardTheme(

@@ -38,10 +38,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.config.CustomGameThemeConfig
 import com.example.engine.BackgammonRules
 import com.example.model.BoardThemes
 import com.example.model.GameState
 import com.example.model.PlayerColor
+import com.example.model.WinType
 import com.example.ui.components.*
 import kotlinx.coroutines.delay
 
@@ -59,12 +61,18 @@ fun GameScreen(
     onUndoClick: () -> Unit,
     onConfirmTurn: () -> Unit,
     onSendChat: (String) -> Unit,
+    onOfferResign: (WinType) -> Unit = {},
+    onRespondResign: (Boolean) -> Unit = {},
+    onRespondDouble: (Boolean) -> Unit = {},
+    onStartNextGame: () -> Unit = {},
+    onResetMatch: () -> Unit = {},
     onExitGame: () -> Unit
 ) {
     val theme = BoardThemes.getThemeById(equippedBoardId)
     val view = LocalView.current
     var showChatDialog by remember { mutableStateOf(false) }
     var showResignDialog by remember { mutableStateOf(false) }
+    var showHelpDialog by remember { mutableStateOf(false) }
 
     var autoRoll by remember { mutableStateOf(false) }
     var autoBearOff by remember { mutableStateOf(false) }
@@ -88,9 +96,9 @@ fun GameScreen(
     ) {
         val isPortrait = maxHeight > maxWidth
 
-        // 1. Cinematic VIP Dragon Lounge Background Art
+        // 1. Cinematic VIP Background Art
         Image(
-            painter = painterResource(id = R.drawable.img_dragon_vip_lounge_1790546607385),
+            painter = painterResource(id = CustomGameThemeConfig.gameBackgroundDrawable),
             contentDescription = "Casino VIP Lounge",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -103,8 +111,8 @@ fun GameScreen(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFF0B0E14).copy(alpha = 0.70f),
-                            Color(0xFF040608).copy(alpha = 0.94f)
+                            Color(0xFF0B0E14).copy(alpha = (CustomGameThemeConfig.backgroundVignetteDarkness * 0.75f).coerceIn(0f, 1f)),
+                            Color(0xFF040608).copy(alpha = CustomGameThemeConfig.backgroundVignetteDarkness.coerceIn(0f, 1f))
                         )
                     )
                 )
@@ -130,7 +138,8 @@ fun GameScreen(
                 onToggleAutoRoll = { autoRoll = it },
                 onToggleAutoBearOff = { autoBearOff = it },
                 onOpenChat = { showChatDialog = true },
-                onOpenResign = { showResignDialog = true }
+                onOpenResign = { showResignDialog = true },
+                onOpenHelp = { showHelpDialog = true }
             )
         } else {
             LandscapeGameLayout(
@@ -151,36 +160,198 @@ fun GameScreen(
                 onToggleAutoRoll = { autoRoll = it },
                 onToggleAutoBearOff = { autoBearOff = it },
                 onOpenChat = { showChatDialog = true },
-                onOpenResign = { showResignDialog = true }
+                onOpenResign = { showResignDialog = true },
+                onOpenHelp = { showHelpDialog = true },
+                onExitGame = onExitGame
             )
         }
     }
 
-    // Dialogs...
-    if (showResignDialog) {
+    // Help Dialog
+    if (showHelpDialog) {
         AlertDialog(
-            onDismissRequest = { showResignDialog = false },
+            onDismissRequest = { showHelpDialog = false },
             containerColor = Color(0xFF141722),
             shape = RoundedCornerShape(16.dp),
-            title = { Text("تسلیم شدن از بازی؟", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp) },
-            text = { Text("در صورت تسلیم، سکه‌های شرط (${state.matchBet}) کسر خواهند شد.", color = Color.LightGray, fontSize = 13.sp) },
-            confirmButton = {
-                Button(
-                    onClick = { showResignDialog = false; onExitGame() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4D4D))
-                ) {
-                    Text("تسلیم", color = Color.White, fontWeight = FontWeight.Bold)
+            title = { Text("راهنمای بازی تخته‌نرد", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("• برای پرتاب تاس روی دکمه «رول تاس» کلیک کنید.", color = Color.White, fontSize = 12.sp)
+                    Text("• مهره‌ها با کلیک روی ستون مبدأ و ستون مقصد جابه‌جا می‌شوند.", color = Color.White, fontSize = 12.sp)
+                    Text("• با دکمه «تایید حرکت» نوبت خود را ثبت کنید.", color = Color.White, fontSize = 12.sp)
+                    Text("• در صورت نیاز از مکعب دوبل (2X) برای افزایش جایزه استفاده کنید.", color = Color.White, fontSize = 12.sp)
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showResignDialog = false }) { Text("ادامه بازی", color = Color.Gray) }
+            confirmButton = {
+                Button(onClick = { showHelpDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))) {
+                    Text("متوجه شدم", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
             }
         )
     }
 
+    // 1. Multi-tier Resignation Dialog (Rule 27)
+    if (showResignDialog) {
+        var selectedResignType by remember { mutableStateOf(WinType.NORMAL) }
+        val wonPtsNormal = 1 * state.doublingCubeValue
+        val wonPtsGammon = 2 * state.doublingCubeValue
+        val wonPtsBackgammon = 3 * state.doublingCubeValue
+
+        AlertDialog(
+            onDismissRequest = { showResignDialog = false },
+            containerColor = Color(0xFF141722),
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    "پیشنهاد تسلیم (Resignation)",
+                    color = Color(0xFFFFD700),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "نوع تسلیم پیشنهادی خود را انتخاب کنید. حریف می‌تواند این پیشنهاد را قبول یا رد کند:",
+                        color = Color.LightGray,
+                        fontSize = 12.sp
+                    )
+
+                    // Option 1: Single
+                    ResignOptionCard(
+                        title = "تسلیم معمولی (Single)",
+                        subtitle = "۱ × کیوب = $wonPtsNormal امتیاز برای حریف",
+                        isSelected = selectedResignType == WinType.NORMAL,
+                        onClick = { selectedResignType = WinType.NORMAL }
+                    )
+
+                    // Option 2: Gammon
+                    ResignOptionCard(
+                        title = "تسلیم مارس (Gammon)",
+                        subtitle = "۲ × کیوب = $wonPtsGammon امتیاز برای حریف",
+                        isSelected = selectedResignType == WinType.GAMMON,
+                        onClick = { selectedResignType = WinType.GAMMON }
+                    )
+
+                    // Option 3: Backgammon
+                    ResignOptionCard(
+                        title = "تسلیم مارس دوبل (Backgammon)",
+                        subtitle = "۳ × کیوب = $wonPtsBackgammon امتیاز برای حریف",
+                        isSelected = selectedResignType == WinType.BACKGAMMON,
+                        onClick = { selectedResignType = WinType.BACKGAMMON }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showResignDialog = false
+                        onOfferResign(selectedResignType)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4D4D))
+                ) {
+                    Text("ارسال پیشنهاد تسلیم", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResignDialog = false }) {
+                    Text("انصراف و ادامه بازی", color = Color.Gray)
+                }
+            }
+        )
+    }
+
+    // 2. Incoming Resignation Dialog from Opponent
+    if (state.resignationOfferedBy != null && state.resignationOfferedBy != PlayerColor.WHITE && !state.isGameOver) {
+        val type = state.resignationType ?: WinType.NORMAL
+        val pts = when (type) {
+            WinType.NORMAL -> 1
+            WinType.GAMMON -> 2
+            WinType.BACKGAMMON -> 3
+        } * state.doublingCubeValue
+        val typeName = when (type) {
+            WinType.NORMAL -> "تسلیم معمولی (Single)"
+            WinType.GAMMON -> "تسلیم مارس (Gammon)"
+            WinType.BACKGAMMON -> "تسلیم مارس دوبل (Backgammon)"
+        }
+
+        AlertDialog(
+            onDismissRequest = { },
+            containerColor = Color(0xFF141722),
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text("درخواست تسلیم از سوی حریف!", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            },
+            text = {
+                Text(
+                    "حریف درخواست $typeName به ارزش $pts امتیاز مسابقه داده است. در صورت پذیرش، شما برنده این دست خواهید شد.",
+                    color = Color.White,
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { onRespondResign(true) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))
+                ) {
+                    Text("قبول تسلیم (برد دست)", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onRespondResign(false) }) {
+                    Text("رد و ادامه بازی", color = Color.LightGray)
+                }
+            }
+        )
+    }
+
+    // 3. Incoming Doubling Offer Dialog from Opponent
+    if (state.doublingOffered && state.currentTurn == PlayerColor.BLACK && !state.isGameOver) {
+        val newCube = state.doublingCubeValue * 2
+        AlertDialog(
+            onDismissRequest = { },
+            containerColor = Color(0xFF141722),
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text("🎲 پیشنهاد دوبل از سوی حریف!", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            },
+            text = {
+                Text(
+                    "حریف پیشنهاد داد ارزش بازی به ${newCube}X افزایش یابد. در صورت انصراف (Pass)، حریف برنده دست فعلی با ارزش ${state.doublingCubeValue}X خواهد بود.",
+                    color = Color.White,
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { onRespondDouble(true) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                ) {
+                    Text("قبول دوبل (Take)", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { onRespondDouble(false) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4D4D))
+                ) {
+                    Text("واگذاری دست (Pass)", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
+    // 4. Game Over & Match Over Dialog (Rules 25, 28, 29)
     if (state.isGameOver) {
         val isWin = (state.winner == PlayerColor.WHITE)
-        val wonCoins = if (isWin) (state.matchBet * 1.95).toLong() else 0L
+        val wonPts = BackgammonRules.calculateWonPoints(state)
+        val wonCoins = if (isWin) (state.matchBet * wonPts) else state.matchBet
+
+        val winTypeName = when (state.winType) {
+            WinType.NORMAL -> "برد معمولی (Single)"
+            WinType.GAMMON -> "برد مارس (Gammon)"
+            WinType.BACKGAMMON -> "برد مارس دوبل (Backgammon)"
+        }
 
         AlertDialog(
             onDismissRequest = { },
@@ -188,7 +359,11 @@ fun GameScreen(
             shape = RoundedCornerShape(22.dp),
             title = {
                 Text(
-                    text = if (isWin) "🏆 پیروزی شکوهمند!" else "💔 شکست در مسابقه",
+                    text = if (state.isMatchOver) {
+                        if (state.matchWinner == PlayerColor.WHITE) "🏆 قهرمان مسابقه شدید!" else "💔 مسابقه به پایان رسید"
+                    } else {
+                        if (isWin) "🏆 پیروزی در این دست!" else "💔 شکست در این دست"
+                    },
                     color = if (isWin) Color(0xFFFFD700) else Color(0xFFFF5252),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -197,21 +372,73 @@ fun GameScreen(
                 )
             },
             text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "$winTypeName • کیوب: ${state.doublingCubeValue}X",
+                        color = Color(0xFF00E5FF),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "امتیاز کسب شده: $wonPts امتیاز مسابقه",
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+
+                    // Match Score Banner
+                    Surface(
+                        color = Color(0xFF181F2E),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalArrangement = Arrangement.SpaceAround,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(state.whitePlayerName, color = Color(0xFF00E5FF), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text("${state.whiteMatchScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                            }
+                            Text("هدف: ${state.matchTargetScore}", color = Color(0xFFFFD700), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(state.blackPlayerName, color = Color(0xFFFF5252), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text("${state.blackMatchScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                            }
+                        }
+                    }
+
                     if (isWin) {
-                        Text("جایزه شما: 🪙 +$wonCoins سکه", color = Color(0xFFFFD700), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    } else {
-                        Text("سکه‌های کسر شده: -${state.matchBet}", color = Color(0xFFFF8A80), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text("جایزه سکه: 🪙 +$wonCoins سکه", color = Color(0xFFFFD700), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = onExitGame,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("بازگشت به لابی", color = Color.Black, fontWeight = FontWeight.ExtraBold)
+                if (state.isMatchOver) {
+                    Button(
+                        onClick = onResetMatch,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("شروع مجدد مسابقه (0 - 0)", color = Color.Black, fontWeight = FontWeight.ExtraBold)
+                    }
+                } else {
+                    Button(
+                        onClick = onStartNextGame,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("دست بعدی (بازی ${state.gameNumber + 1})", color = Color.Black, fontWeight = FontWeight.ExtraBold)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onExitGame, modifier = Modifier.fillMaxWidth()) {
+                    Text("بازگشت به منوی اصلی", color = Color.Gray, fontSize = 12.sp)
                 }
             }
         )
@@ -222,8 +449,44 @@ fun GameScreen(
     }
 }
 
+@Composable
+private fun ResignOptionCard(
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = if (isSelected) Color(0xFF2C1920) else Color(0xFF181C26),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.5.dp,
+            if (isSelected) Color(0xFFFF4D4D) else Color(0xFF2A3347)
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text(subtitle, color = Color(0xFFFFB4AB), fontSize = 11.sp)
+            }
+            RadioButton(
+                selected = isSelected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFFF4D4D))
+            )
+        }
+    }
+}
+
 // =========================================================================
-// PORTRAIT LAYOUT (Vertical Mobile Screen - Matching User's Design Image)
+// PORTRAIT LAYOUT
 // =========================================================================
 @Composable
 private fun PortraitGameLayout(
@@ -244,10 +507,9 @@ private fun PortraitGameLayout(
     onToggleAutoRoll: (Boolean) -> Unit,
     onToggleAutoBearOff: (Boolean) -> Unit,
     onOpenChat: () -> Unit,
-    onOpenResign: () -> Unit
+    onOpenResign: () -> Unit,
+    onOpenHelp: () -> Unit
 ) {
-    val view = LocalView.current
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -256,7 +518,7 @@ private fun PortraitGameLayout(
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // TOP: Opponent HUD (Player 2 - Black / Imperial Gold)
+        // TOP HUD
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -284,7 +546,6 @@ private fun PortraitGameLayout(
                 }
             }
 
-            // Stake & Doubling Cube Badge
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DoublingCubeBadge(value = state.doublingCubeValue)
                 IconButton(onClick = onOpenChat, modifier = Modifier.size(34.dp)) {
@@ -296,7 +557,7 @@ private fun PortraitGameLayout(
             }
         }
 
-        // CENTER: 3D Backgammon Board & Glowing Turn Banner
+        // CENTER BOARD
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -310,11 +571,10 @@ private fun PortraitGameLayout(
                 onPointClick = onPointClick,
                 onBarClick = onBarClick,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .aspectRatio(1.36f, matchHeightConstraintsFirst = false)
+                    .fillMaxWidth(0.96f)
+                    .aspectRatio(1.45f)
             )
 
-            // Dynamic 3D Dice Tumble Overlay
             if (state.dice != null || state.openingRoll != null) {
                 BoardDiceOverlay(
                     diceRoll = state.dice,
@@ -324,7 +584,6 @@ private fun PortraitGameLayout(
                 )
             }
 
-            // Floating Glowing Turn Banner (Matching user reference image!)
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -336,29 +595,9 @@ private fun PortraitGameLayout(
                     isUsingBank = state.isUsingBankTime
                 )
             }
-
-            // AI Commentary if available
-            if (commentary.isNotBlank()) {
-                Surface(
-                    color = Color(0xFF0C101A).copy(alpha = 0.92f),
-                    shape = RoundedCornerShape(10.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.35f)),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 6.dp)
-                ) {
-                    Text(
-                        text = "💡 $commentary",
-                        color = Color(0xFF80D8FF),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                    )
-                }
-            }
         }
 
-        // BOTTOM: Player 1 HUD & Cyber-Luxury Action Controls
+        // BOTTOM CONTROLS
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -368,7 +607,6 @@ private fun PortraitGameLayout(
                 .padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Player info row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -391,7 +629,6 @@ private fun PortraitGameLayout(
                     }
                 }
 
-                // Match Bet Chips
                 Surface(
                     color = Color(0xFF1A1F2C),
                     shape = RoundedCornerShape(8.dp),
@@ -407,23 +644,7 @@ private fun PortraitGameLayout(
                 }
             }
 
-            // Turn Timer Progress
-            if (isMyTurn) {
-                val turnProgress = (state.turnTimerSeconds / 30f).coerceIn(0f, 1f)
-                LinearProgressIndicator(
-                    progress = { turnProgress },
-                    color = if (state.turnTimerSeconds <= 5) Color(0xFFFF5252) else Color(0xFF00E5FF),
-                    trackColor = Color(0xFF1E2638),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.dp)
-                        .clip(CircleShape)
-                )
-            }
-
-            // PRIMARY ACTION CONTROLS (Matching user reference image!)
             if (state.dice == null && (isMyTurn || state.isRollingForTurn)) {
-                // Roll Dice Button with glowing pulse
                 GlowingRollDiceButton(
                     isRollingForTurn = state.isRollingForTurn,
                     onClick = onRollClick
@@ -433,68 +654,29 @@ private fun PortraitGameLayout(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Undo Move Button
                     Button(
-                        onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                            onUndoClick()
-                        },
+                        onClick = onUndoClick,
                         enabled = canUndo,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1A2338),
-                            disabledContainerColor = Color(0xFF101420)
-                        ),
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A2338)),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Icon(Icons.Default.Undo, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (canUndo) Color.White else Color.Gray)
-                        Spacer(Modifier.width(4.dp))
                         Text("برگشت", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (canUndo) Color.White else Color.Gray)
                     }
 
-                    // Confirm Turn Button
-                    val pulseAnim = rememberInfiniteTransition(label = "pulse_confirm")
-                    val confirmScale by pulseAnim.animateFloat(
-                        initialValue = 0.98f,
-                        targetValue = 1.03f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(650, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "scale"
-                    )
-
                     Button(
-                        onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                            onConfirmTurn()
-                        },
-                        modifier = Modifier
-                            .weight(1.5f)
-                            .height(44.dp)
-                            .then(if (allMovesFinished) Modifier.scale(confirmScale) else Modifier),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (allMovesFinished) Color(0xFF00E676) else Color(0xFF00B0FF)
-                        ),
+                        onClick = onConfirmTurn,
+                        modifier = Modifier.weight(1.5f).height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (allMovesFinished) Color(0xFF00E676) else Color(0xFF00B0FF)),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Black)
-                        Spacer(Modifier.width(4.dp))
                         Text("تایید حرکت", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
                     }
 
-                    // Doubling Offer Button (if available)
                     if (!state.doublingOffered) {
                         Button(
-                            onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                                onDoubleOffer()
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(44.dp),
+                            onClick = onDoubleOffer,
+                            modifier = Modifier.weight(1f).height(44.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DFF)),
                             shape = RoundedCornerShape(10.dp)
                         ) {
@@ -508,7 +690,7 @@ private fun PortraitGameLayout(
 }
 
 // =========================================================================
-// LANDSCAPE LAYOUT (Horizontal Screen)
+// LANDSCAPE LAYOUT (Exact Match to User Reference Image 3)
 // =========================================================================
 @Composable
 private fun LandscapeGameLayout(
@@ -529,127 +711,130 @@ private fun LandscapeGameLayout(
     onToggleAutoRoll: (Boolean) -> Unit,
     onToggleAutoBearOff: (Boolean) -> Unit,
     onOpenChat: () -> Unit,
-    onOpenResign: () -> Unit
+    onOpenResign: () -> Unit,
+    onOpenHelp: () -> Unit,
+    onExitGame: () -> Unit
 ) {
-    val view = LocalView.current
-
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 10.dp, vertical = 2.dp),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // LEFT SIDEBAR: Player 1 (You - Cyan Dragon)
-        Column(
+        // TOP HEADER (Matching Image 3: Left Player, Center Ornate Logo, Right Player)
+        Row(
             modifier = Modifier
-                .width(170.dp)
-                .fillMaxHeight(),
-            verticalArrangement = Arrangement.SpaceBetween
+                .fillMaxWidth()
+                .padding(vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                PlayerProfileCard(
-                    name = state.whitePlayerName,
-                    pipCount = state.whitePipCount,
-                    avatarEmoji = "👑",
-                    isTurn = state.currentTurn == PlayerColor.WHITE,
-                    timerSeconds = state.turnTimerSeconds,
-                    bankSeconds = state.whiteBankSeconds,
-                    isUsingBankTime = state.isUsingBankTime && state.currentTurn == PlayerColor.WHITE,
-                    isWhite = true
-                )
+            // Player 1 (Left)
+            PlayerHudPill(
+                name = state.whitePlayerName,
+                score = state.whiteMatchScore,
+                rating = "1520",
+                avatar = "👑",
+                color = Color(0xFF00E5FF)
+            )
 
-                if (state.currentTurn == PlayerColor.WHITE || state.isRollingForTurn) {
-                    SidebarDiceWidget(
-                        diceRoll = state.dice,
-                        isMyTurn = true,
-                        isRollingForTurn = state.isRollingForTurn,
-                        onRollClick = onRollClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(78.dp)
-                    )
+            // Center Ornate Logo & Tournament Match Status
+            val canDouble = BackgammonRules.canPlayerDouble(state, state.currentTurn)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF1C170C).copy(alpha = 0.95f), Color(0xFF0D0F17).copy(alpha = 0.95f))
+                            )
+                        )
+                        .border(
+                            1.5.dp,
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFFFFD700), Color(0xFF00E5FF), Color(0xFFFFD700))
+                            ),
+                            RoundedCornerShape(14.dp)
+                        )
+                        .padding(horizontal = 14.dp, vertical = 3.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text("👑", fontSize = 13.sp)
+                            Text(
+                                text = "تخته نرد",
+                                color = Color(0xFFFFD700),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                style = androidx.compose.ui.text.TextStyle(
+                                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black, blurRadius = 8f)
+                                )
+                            )
+                            Text("🎲", fontSize = 13.sp)
+                        }
+                        Text(
+                            text = if (state.isCrawfordGame) "قانون کرافورد (کوب غیرفعال) • تا ${state.matchTargetScore}" else "دست ${state.gameNumber} • مسابقه تا ${state.matchTargetScore}",
+                            color = if (state.isCrawfordGame) Color(0xFFFF4081) else Color(0xFF00E5FF),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
-                if (isMyTurn && state.dice != null && !state.isRollingForTurn) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF141926))
-                            .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.4f), RoundedCornerShape(10.dp))
-                            .padding(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                // Doubling Cube Indicator Pill
+                Surface(
+                    color = if (canDouble) Color(0xFF261D0A) else Color(0xFF141722),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.2.dp,
+                        if (canDouble) Color(0xFFFFD700) else Color.Gray.copy(alpha = 0.4f)
+                    ),
+                    modifier = Modifier.clickable(enabled = canDouble, onClick = onDoubleOffer)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Button(
-                            onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                onUndoClick()
-                            },
-                            enabled = canUndo,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(38.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF1F2B44),
-                                disabledContainerColor = Color(0xFF141926)
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Icon(Icons.Default.Undo, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (canUndo) Color.White else Color.Gray)
-                            Spacer(Modifier.width(4.dp))
-                            Text("برگشت مهره", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (canUndo) Color.White else Color.Gray)
-                        }
-
-                        val pulseAnim = rememberInfiniteTransition(label = "pulse_confirm")
-                        val confirmScale by pulseAnim.animateFloat(
-                            initialValue = 0.98f,
-                            targetValue = 1.04f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(650, easing = FastOutSlowInEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "scale"
+                        Text("🎲", fontSize = 14.sp)
+                        Text(
+                            text = "${state.doublingCubeValue}X",
+                            color = if (canDouble) Color(0xFFFFD700) else Color.LightGray,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.ExtraBold
                         )
-
-                        Button(
-                            onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                                onConfirmTurn()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(40.dp)
-                                .then(if (allMovesFinished) Modifier.scale(confirmScale) else Modifier),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (allMovesFinished) Color(0xFF00E676) else Color(0xFF00B0FF)
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(17.dp), tint = Color.Black)
-                            Spacer(Modifier.width(4.dp))
-                            Text("تایید حرکت", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                        if (canDouble) {
+                            Text("دوبل", color = Color(0xFFFFD700), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AutoActionToggle(title = "تاس خودکار", icon = Icons.Default.Refresh, isEnabled = autoRoll, onToggle = onToggleAutoRoll)
-                AutoActionToggle(title = "خروج خودکار", icon = Icons.Default.FastForward, isEnabled = autoBearOff, onToggle = onToggleAutoBearOff)
-            }
+            // Player 2 (Right)
+            PlayerHudPill(
+                name = state.blackPlayerName,
+                score = state.blackMatchScore,
+                rating = "1487",
+                avatar = "🐉",
+                color = Color(0xFFFF5252)
+            )
         }
 
-        // CENTER: 3D Board
+        // CENTER: 3D Backgammon Board & Turn Banner (Maximized size)
         Box(
             modifier = Modifier
+                .fillMaxWidth()
                 .weight(1f)
-                .fillMaxHeight()
-                .padding(horizontal = 20.dp),
+                .padding(vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {
             BoardCanvas(
@@ -658,8 +843,8 @@ private fun LandscapeGameLayout(
                 onPointClick = onPointClick,
                 onBarClick = onBarClick,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .aspectRatio(1.36f, matchHeightConstraintsFirst = false)
+                    .fillMaxHeight()
+                    .aspectRatio(1.58f, matchHeightConstraintsFirst = true)
             )
 
             if (state.dice != null || state.openingRoll != null) {
@@ -671,11 +856,11 @@ private fun LandscapeGameLayout(
                 )
             }
 
-            // Floating Glowing Turn Banner
+            // Floating Glowing Turn Banner («نوبت شماست»)
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-8).dp)
+                    .offset(y = (-4).dp)
             ) {
                 FloatingTurnBanner(
                     isMyTurn = isMyTurn,
@@ -683,108 +868,182 @@ private fun LandscapeGameLayout(
                     isUsingBank = state.isUsingBankTime
                 )
             }
-
-            if (commentary.isNotBlank()) {
-                Surface(
-                    color = Color(0xFF0E131E).copy(alpha = 0.92f),
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.35f)),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 12.dp)
-                ) {
-                    Text(
-                        text = "💡 $commentary",
-                        color = Color(0xFF80D8FF),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
-                    )
-                }
-            }
         }
 
-        // RIGHT SIDEBAR: Player 2 (Opponent - Imperial Gold Dragon)
-        Column(
+        // BOTTOM ACTION BAR (Menü, Undo, Double, Roll, Help, Resign)
+        val canDouble = BackgammonRules.canPlayerDouble(state, state.currentTurn)
+        GameBottomActionBar(
+            isMyTurn = isMyTurn,
+            dice = state.dice,
+            isRollingForTurn = state.isRollingForTurn,
+            canUndo = canUndo,
+            canDouble = canDouble,
+            cubeMultiplier = state.doublingCubeValue,
+            onRollClick = onRollClick,
+            onUndoClick = onUndoClick,
+            onDoubleOffer = onDoubleOffer,
+            onOpenMenu = onExitGame,
+            onOpenHelp = onOpenHelp,
+            onOpenResign = onOpenResign
+        )
+    }
+}
+
+@Composable
+private fun PlayerHudPill(
+    name: String,
+    score: Int,
+    rating: String,
+    avatar: String,
+    color: Color
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF10131D).copy(alpha = 0.90f))
+            .border(1.2.dp, color.copy(alpha = 0.7f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
             modifier = Modifier
-                .width(170.dp)
-                .fillMaxHeight(),
-            verticalArrangement = Arrangement.SpaceBetween
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(color.copy(alpha = 0.2f))
+                .border(1.dp, color, CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                PlayerProfileCard(
-                    name = state.blackPlayerName,
-                    pipCount = state.blackPipCount,
-                    avatarEmoji = "🤖",
-                    isTurn = state.currentTurn == PlayerColor.BLACK,
-                    timerSeconds = state.turnTimerSeconds,
-                    bankSeconds = state.blackBankSeconds,
-                    isUsingBankTime = state.isUsingBankTime && state.currentTurn == PlayerColor.BLACK,
-                    isWhite = false
+            Text(avatar, fontSize = 14.sp)
+        }
+        Column(verticalArrangement = Arrangement.Center) {
+            Text(name, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("امتیاز: $score", color = color, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+        }
+    }
+}
+
+@Composable
+private fun GameBottomActionBar(
+    isMyTurn: Boolean,
+    dice: com.example.model.DiceRoll?,
+    isRollingForTurn: Boolean,
+    canUndo: Boolean,
+    canDouble: Boolean = false,
+    cubeMultiplier: Int = 1,
+    onRollClick: () -> Unit,
+    onUndoClick: () -> Unit,
+    onDoubleOffer: () -> Unit = {},
+    onOpenMenu: () -> Unit,
+    onOpenHelp: () -> Unit,
+    onOpenResign: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(Color(0xFF141926).copy(alpha = 0.95f), Color(0xFF0D101A).copy(alpha = 0.95f))
                 )
+            )
+            .border(
+                1.5.dp,
+                Brush.horizontalGradient(
+                    listOf(Color(0xFFFFD700).copy(alpha = 0.6f), Color(0xFF00E5FF).copy(alpha = 0.6f))
+                ),
+                RoundedCornerShape(22.dp)
+            )
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 1. Menu
+        GameActionButton(icon = "☰", label = "منو", onClick = onOpenMenu)
+        // 2. Undo
+        GameActionButton(icon = "↩", label = "بازگشت", enabled = canUndo, onClick = onUndoClick)
+        // 3. Doubling Cube
+        GameActionButton(
+            icon = "🎲",
+            label = "دوبل (${cubeMultiplier * 2}X)",
+            enabled = canDouble,
+            color = Color(0xFFFFD700),
+            onClick = onDoubleOffer
+        )
+        // 4. Roll Dice (Central Glowing Button)
+        GlowingRollDiceButtonCompact(isRolling = isRollingForTurn, onClick = onRollClick)
+        // 5. Help
+        GameActionButton(icon = "💡", label = "کمک", onClick = onOpenHelp)
+        // 6. Resign
+        GameActionButton(icon = "🏳", label = "تسلیم", color = Color(0xFFFF5252), onClick = onOpenResign)
+    }
+}
 
-                if (state.currentTurn == PlayerColor.BLACK) {
-                    SidebarDiceWidget(
-                        diceRoll = state.dice,
-                        isMyTurn = false,
-                        onRollClick = {},
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(78.dp)
-                    )
-                }
-            }
+@Composable
+private fun GameActionButton(
+    icon: String,
+    label: String,
+    enabled: Boolean = true,
+    color: Color = Color(0xFFFFD700),
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(icon, fontSize = 18.sp, color = if (enabled) color else Color.Gray)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = if (enabled) Color.White else Color.Gray)
+    }
+}
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                MatchStakeCard(bet = state.matchBet, doubling = state.doublingCubeValue)
+@Composable
+private fun GlowingRollDiceButtonCompact(
+    isRolling: Boolean,
+    onClick: () -> Unit
+) {
+    val pulseAnim = rememberInfiniteTransition(label = "pulse_compact_roll")
+    val scale by pulseAnim.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
 
-                if (isMyTurn && state.dice == null && !state.doublingOffered) {
-                    Button(
-                        onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                            onDoubleOffer()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(42.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DFF)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text("پیشنهاد دوبل (2X)", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = onOpenChat,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF242A38)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Icon(Icons.Default.Chat, contentDescription = "Chat", tint = Color(0xFFFFD700), modifier = Modifier.size(18.dp))
-                    }
-                    Button(
-                        onClick = onOpenResign,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF381C22)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Icon(Icons.Default.Flag, contentDescription = "Resign", tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp))
-                    }
-                }
-            }
+    Box(
+        modifier = Modifier
+            .height(44.dp)
+            .scale(scale)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(Color(0xFFFFD700), Color(0xFFFF9100))
+                )
+            )
+            .border(1.5.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text("🎲", fontSize = 16.sp)
+            Text(
+                text = "رول تاس",
+                color = Color.Black,
+                fontWeight = FontWeight.Black,
+                fontSize = 12.sp
+            )
         }
     }
 }
@@ -921,171 +1180,6 @@ private fun DoublingCubeBadge(value: Int) {
             fontSize = 11.sp,
             fontWeight = FontWeight.Black,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-        )
-    }
-}
-
-@Composable
-private fun PlayerProfileCard(
-    name: String,
-    pipCount: Int,
-    avatarEmoji: String,
-    isTurn: Boolean,
-    timerSeconds: Int,
-    bankSeconds: Int,
-    isUsingBankTime: Boolean,
-    isWhite: Boolean
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF121622))
-            .border(
-                1.5.dp,
-                if (isTurn) {
-                    if (isUsingBankTime) Color(0xFFFF5252) else (if (isWhite) Color(0xFF00E5FF) else Color(0xFFFFD700))
-                } else Color(0xFF232A3D),
-                RoundedCornerShape(12.dp)
-            )
-            .padding(10.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(if (isWhite) Color(0xFF0D253A) else Color(0xFF281F0E))
-                    .border(1.2.dp, if (isWhite) Color(0xFF00E5FF) else Color(0xFFFFD700), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(avatarEmoji, fontSize = 18.sp)
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("PIP: $pipCount", color = if (isWhite) Color(0xFF00E5FF) else Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("بانک ذخیره:", color = Color.Gray, fontSize = 10.sp)
-            Text(
-                text = "${bankSeconds}s",
-                color = if (isUsingBankTime) Color(0xFFFF5252) else Color(0xFF90CAF9),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        if (isTurn) {
-            Spacer(modifier = Modifier.height(6.dp))
-
-            if (isUsingBankTime) {
-                val bankProgress = (bankSeconds / 30f).coerceIn(0f, 1f)
-                LinearProgressIndicator(
-                    progress = { bankProgress },
-                    color = Color(0xFFFF3D00),
-                    trackColor = Color(0xFF4A1515),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(CircleShape)
-                )
-                Text(
-                    text = "⚠️ زمان اضافه: ${bankSeconds}s",
-                    color = Color(0xFFFF5252),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    textAlign = TextAlign.End
-                )
-            } else {
-                val turnProgress = (timerSeconds / 30f).coerceIn(0f, 1f)
-                val timerColor = if (timerSeconds <= 5) Color(0xFFFF5252) else (if (isWhite) Color(0xFF00E5FF) else Color(0xFFFFD700))
-                LinearProgressIndicator(
-                    progress = { turnProgress },
-                    color = timerColor,
-                    trackColor = Color(0xFF222B3D),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(CircleShape)
-                )
-                Text(
-                    text = "زمان نوبت: ${timerSeconds}s",
-                    color = timerColor,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    textAlign = TextAlign.End
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MatchStakeCard(bet: Long, doubling: Int) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF151924))
-            .border(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(verticalArrangement = Arrangement.Center) {
-            Text("جایزه مسابقه", color = Color.Gray, fontSize = 9.sp)
-            Text("🪙 ${bet * 2 * doubling}", color = Color(0xFFFFD700), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
-        }
-        DoublingCubeBadge(value = doubling)
-    }
-}
-
-@Composable
-private fun AutoActionToggle(title: String, icon: ImageVector, isEnabled: Boolean, onToggle: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(42.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (isEnabled) Color(0xFF004D40) else Color(0xFF141926))
-            .clickable { onToggle(!isEnabled) }
-            .padding(horizontal = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = if (isEnabled) Color(0xFF00E676) else Color.Gray, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(title, color = if (isEnabled) Color.White else Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        }
-        Switch(
-            checked = isEnabled,
-            onCheckedChange = onToggle,
-            modifier = Modifier
-                .scale(0.6f)
-                .padding(end = 0.dp),
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF00E676),
-                uncheckedThumbColor = Color.Gray,
-                uncheckedTrackColor = Color(0xFF222B3D),
-                uncheckedBorderColor = Color.Transparent
-            )
         )
     }
 }

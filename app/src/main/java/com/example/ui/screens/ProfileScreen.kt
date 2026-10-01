@@ -1,7 +1,6 @@
 package com.example.ui.screens
 
 import android.widget.Toast
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,7 +28,6 @@ import androidx.compose.ui.unit.sp
 import com.example.data.FriendEntity
 import com.example.data.MatchEntity
 import com.example.data.UserEntity
-import com.example.ui.components.GlassCard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,7 +68,7 @@ fun ProfileScreen(
                             fontSize = 17.sp
                         )
                         Text(
-                            "سطح ${user.level} • ${getRankTitle(user.level)}",
+                            "سطح ${user.level} • ${getProfileRankTitle(user.level)}",
                             color = Color(0xFF00E5FF),
                             fontSize = 11.sp
                         )
@@ -113,150 +111,210 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(16.dp)
         ) {
-            // 1. Imperial Profile Header Card
+            // =========================================================================
+            // MASTER-DESIGN PROFILE HEADER (Matching Reference Image 1)
+            // =========================================================================
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color(0xFF1E180B), Color(0xFF0D0F17))
-                            )
-                        )
-                        .border(
-                            1.5.dp,
-                            Brush.horizontalGradient(
-                                listOf(Color(0xFFFFD700), Color(0xFF00E5FF), Color(0xFFFFD700))
-                            ),
-                            RoundedCornerShape(22.dp)
-                        )
-                        .padding(16.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                    // LEFT / MAIN PROFILE CARD
+                    Box(
+                        modifier = Modifier
+                            .weight(1.6f)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFF1C170C), Color(0xFF0A0D14))
+                                )
+                            )
+                            .border(
+                                1.8.dp,
+                                Brush.horizontalGradient(
+                                    listOf(Color(0xFFFFD700), Color(0xFFB8860B), Color(0xFFFFD700))
+                                ),
+                                RoundedCornerShape(22.dp)
+                            )
+                            .padding(16.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            // Avatar & Username & Level
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
-                                // Avatar in Golden Dragon Medallion
-                                Box(contentAlignment = Alignment.TopEnd) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(70.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                Brush.radialGradient(
-                                                    listOf(Color(0xFFFFD700), Color(0xFF8B6508))
-                                                )
+                                // 24K Gold Ornate Medallion Avatar Frame
+                                Box(
+                                    modifier = Modifier
+                                        .size(74.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.radialGradient(
+                                                listOf(Color(0xFFFFD700), Color(0xFF6B4F0F))
                                             )
-                                            .border(2.5.dp, Color(0xFFFFE082), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(getAvatarEmoji(user.avatarId), fontSize = 34.sp)
-                                    }
-                                    Surface(
-                                        color = Color(0xFFFFD700),
-                                        shape = CircleShape,
-                                        modifier = Modifier.offset(x = 4.dp, y = (-4).dp)
-                                    ) {
-                                        Text("👑", fontSize = 12.sp, modifier = Modifier.padding(2.dp))
-                                    }
+                                        )
+                                        .border(2.5.dp, Color(0xFFFFE082), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(getProfileAvatarEmoji(user.avatarId), fontSize = 36.sp)
                                 }
 
-                                Column {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            user.username,
-                                            color = Color.White,
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.ExtraBold
-                                        )
-                                        Surface(
-                                            color = Color(0xFFFFD700),
-                                            shape = RoundedCornerShape(6.dp)
-                                        ) {
-                                            Text(
-                                                user.vipTier,
-                                                color = Color.Black,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                    }
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(
-                                        getRankTitle(user.level),
-                                        color = Color(0xFFFFD700),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
+                                        text = user.username,
+                                        color = Color.White,
+                                        fontSize = 19.sp,
+                                        fontWeight = FontWeight.ExtraBold
                                     )
                                     Text(
-                                        "ریتینگ قدرتی: ${user.rating} MMR",
-                                        color = Color(0xFF00E5FF),
-                                        fontSize = 11.sp,
+                                        text = "سطح ${user.level}",
+                                        color = Color(0xFFFFD700),
+                                        fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    // Golden XP Progress Bar
+                                    LinearProgressIndicator(
+                                        progress = { ((user.xp % 1000) / 1000f).coerceIn(0f, 1f) },
+                                        modifier = Modifier
+                                            .width(130.dp)
+                                            .height(7.dp)
+                                            .clip(RoundedCornerShape(4.dp)),
+                                        color = Color(0xFFFFD700),
+                                        trackColor = Color(0xFF1E2433)
                                     )
                                 }
                             }
 
-                            // Wallet Quick Stats
-                            Column(horizontalAlignment = Alignment.End) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("🪙", fontSize = 13.sp)
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        "${user.coins}",
-                                        color = Color(0xFFFFD700),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(3.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("💎", fontSize = 13.sp)
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        "${user.gems}",
-                                        color = Color(0xFF00E5FF),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp
-                                    )
+                            // Stats Row: بازی‌ها | بردها | درصد برد
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                ProfileStatItem(label = "بازی‌ها", value = "${user.totalMatches}", icon = "💬")
+                                ProfileStatItem(label = "بردها", value = "${user.wins}", icon = "👤")
+                                ProfileStatItem(label = "درصد برد", value = "$winRate%", icon = "🎯")
+                            }
+
+                            // Badges Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("نشان‌ها", color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("👑", fontSize = 18.sp)
+                                    Text("⭐", fontSize = 18.sp)
+                                    Text("🦅", fontSize = 18.sp)
+                                    Text("💠", fontSize = 18.sp)
                                 }
                             }
                         }
+                    }
 
-                        // XP Level Progress Bar
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("پیشرفت سطح ${user.level}", color = Color.Gray, fontSize = 11.sp)
-                                Text("${user.xp % 1000} / 1000 XP", color = Color(0xFFFFE082), fontSize = 11.sp)
-                            }
-                            LinearProgressIndicator(
-                                progress = { ((user.xp % 1000) / 1000f).coerceIn(0f, 1f) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = Color(0xFFFFD700),
-                                trackColor = Color(0xFF1E2433)
+                    // RIGHT: BEST SCORE & GLOBAL RANK CARD (Matching Reference Image 1)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(210.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFF1C170C), Color(0xFF0A0D14))
+                                )
                             )
+                            .border(
+                                1.8.dp,
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFFFFD700), Color(0xFF8B6508))
+                                ),
+                                RoundedCornerShape(22.dp)
+                            )
+                            .padding(14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxHeight()
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("بهترین امتیاز", color = Color(0xFFFFE082), fontSize = 11.sp)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "${1500 + user.wins * 10}",
+                                    color = Color(0xFFFFD700),
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+
+                            HorizontalDivider(
+                                color = Color(0xFFFFD700).copy(alpha = 0.3f),
+                                thickness = 1.dp,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("رتبه جهانی", color = Color(0xFFFFE082), fontSize = 11.sp)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "#${(150 - user.level * 2).coerceAtLeast(1)}",
+                                    color = Color(0xFF00E5FF),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+
+                            Surface(
+                                color = Color(0xFFFFD700).copy(alpha = 0.15f),
+                                shape = CircleShape,
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("📈", fontSize = 16.sp)
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // 2. Tabs Row
+            // =========================================================================
+            // RECENT ACTIVITY SECTION (Matching Reference Image 1)
+            // =========================================================================
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color(0xFF111522))
+                        .border(1.dp, Color(0xFFFFD700).copy(alpha = 0.3f), RoundedCornerShape(18.dp))
+                        .padding(14.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            "فعالیت اخیر",
+                            color = Color(0xFFFFD700),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+
+                        ActivityLogRow(icon = "🎲", title = "برد در بازی آنلاین", time = "۲۵ ساعت پیش", reward = "+120 امتیاز")
+                        ActivityLogRow(icon = "🏆", title = "شرکت در مسابقه تورنمنت", time = "۴۰ روز پیش", reward = "+350 امتیاز")
+                        ActivityLogRow(icon = "👥", title = "دعوت از دوستان", time = "۱۵ روز پیش", reward = "+50 امتیاز")
+                    }
+                }
+            }
+
+            // =========================================================================
+            // TABS & DETAILED CONTENT
+            // =========================================================================
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -305,7 +363,6 @@ fun ProfileScreen(
                 }
             }
 
-            // 3. Tab Contents
             when (selectedTab) {
                 ProfileTab.STATS -> {
                     item {
@@ -452,37 +509,44 @@ fun ProfileScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "لیست همراهان و رقبا",
+                                "دوستان آنلاین و دعوت",
                                 color = Color(0xFFFFD700),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text(
-                                "ارسال روزانه سکه رایگان 🎁",
-                                color = Color(0xFF00E5FF),
-                                fontSize = 11.sp
-                            )
+                            Button(
+                                onClick = {
+                                    Toast.makeText(context, "🔗 لینک دعوت شما در کلیپ‌بورد کپی شد!", Toast.LENGTH_SHORT).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text("دعوت دوست +", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
 
-                    val dummyFriends = if (friends.isNotEmpty()) friends else listOf(
-                        FriendEntity(friendName = "خسرو_پرویز", level = 45, coins = 1850000, avatarId = 2, isOnline = true),
-                        FriendEntity(friendName = "شاهین_اصفهان", level = 34, coins = 920000, avatarId = 3, isOnline = true),
-                        FriendEntity(friendName = "کوروش_بزرگ", level = 72, coins = 4800000, avatarId = 4, isOnline = false),
-                        FriendEntity(friendName = "داریوش_شیراز", level = 26, coins = 430000, avatarId = 5, isOnline = true),
-                        FriendEntity(friendName = "سهراب_یل", level = 19, coins = 210000, avatarId = 6, isOnline = false)
-                    )
-
-                    items(dummyFriends) { friend ->
-                        FriendItemTile(
-                            friend = friend,
-                            onChallenge = {
-                                Toast.makeText(context, "⚔️ دعوت‌نامه مسابقه برای ${friend.friendName} ارسال شد!", Toast.LENGTH_SHORT).show()
-                            },
-                            onSendGift = {
-                                Toast.makeText(context, "🎁 ۱,۰۰۰ سکه هدیه به ${friend.friendName} اهدا شد!", Toast.LENGTH_SHORT).show()
+                    if (friends.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "لیست دوستان خالی است. با دعوت دوستان هدیه بگیرید!",
+                                    color = Color.Gray,
+                                    fontSize = 13.sp,
+                                    textAlign = TextAlign.Center
+                                )
                             }
-                        )
+                        }
+                    } else {
+                        items(friends) { friend ->
+                            FriendRowCard(friend = friend)
+                        }
                     }
                 }
             }
@@ -490,15 +554,65 @@ fun ProfileScreen(
     }
 
     if (showEditDialog) {
-        EditProfileDialogPersian(
+        EditProfileDialog(
             currentName = user.username,
             currentAvatarId = user.avatarId,
             onDismiss = { showEditDialog = false },
-            onSave = { name, avatarId ->
-                onUpdateProfile(name, avatarId)
+            onSave = { newName, newAvatarId ->
+                onUpdateProfile(newName, newAvatarId)
                 showEditDialog = false
+                Toast.makeText(context, "✨ پروفایل با موفقیت به‌روزرسانی شد!", Toast.LENGTH_SHORT).show()
             }
         )
+    }
+}
+
+@Composable
+fun ProfileStatItem(label: String, value: String, icon: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(value, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(icon, fontSize = 11.sp)
+            Text(label, color = Color.Gray, fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+fun ActivityLogRow(icon: String, title: String, time: String, reward: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(icon, fontSize = 16.sp)
+            Column {
+                Text(title, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(time, color = Color.Gray, fontSize = 10.sp)
+            }
+        }
+        Surface(
+            color = Color(0xFFFFD700).copy(alpha = 0.15f),
+            shape = RoundedCornerShape(6.dp)
+        ) {
+            Text(
+                reward,
+                color = Color(0xFFFFD700),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+            )
+        }
     }
 }
 
@@ -506,27 +620,37 @@ fun ProfileScreen(
 fun StatBox(
     title: String,
     value: String,
-    color: Color,
-    icon: String,
+    accentColor: Color,
+    emoji: String,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF131826))
-            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
-            .padding(12.dp)
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF141926), Color(0xFF0D101A))
+                )
+            )
+            .border(
+                1.dp,
+                Brush.horizontalGradient(
+                    listOf(accentColor.copy(alpha = 0.6f), accentColor.copy(alpha = 0.2f))
+                ),
+                RoundedCornerShape(16.dp)
+            )
+            .padding(14.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(icon, fontSize = 20.sp)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(value, color = color, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(title, color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, color = Color.Gray, fontSize = 11.sp)
+                Text(value, color = accentColor, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+            }
+            Text(emoji, fontSize = 26.sp)
         }
     }
 }
@@ -543,10 +667,12 @@ fun AchievementTile(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF121724))
+            .background(
+                if (isUnlocked) Color(0xFF141926) else Color(0xFF0D101A).copy(alpha = 0.6f)
+            )
             .border(
                 1.dp,
-                if (isUnlocked) badgeColor.copy(alpha = 0.6f) else Color.White.copy(alpha = 0.08f),
+                if (isUnlocked) badgeColor.copy(alpha = 0.5f) else Color.Gray.copy(alpha = 0.2f),
                 RoundedCornerShape(16.dp)
             )
             .padding(14.dp)
@@ -558,40 +684,47 @@ fun AchievementTile(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(50.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
-                        .background(if (isUnlocked) badgeColor.copy(alpha = 0.2f) else Color(0xFF1C2230))
-                        .border(1.5.dp, if (isUnlocked) badgeColor else Color.Gray, CircleShape),
+                        .background(
+                            if (isUnlocked) badgeColor.copy(alpha = 0.2f) else Color.DarkGray.copy(alpha = 0.2f)
+                        )
+                        .border(
+                            1.dp,
+                            if (isUnlocked) badgeColor else Color.Gray,
+                            CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(icon, fontSize = 24.sp)
+                    Text(icon, fontSize = 20.sp)
                 }
 
                 Column {
                     Text(
                         title,
                         color = if (isUnlocked) Color.White else Color.Gray,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    Text(desc, color = Color.Gray, fontSize = 11.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        desc,
+                        color = if (isUnlocked) Color.LightGray else Color.DarkGray,
+                        fontSize = 11.sp
+                    )
                 }
             }
 
             Surface(
-                color = if (isUnlocked) badgeColor.copy(alpha = 0.2f) else Color(0xFF222B3D),
-                shape = RoundedCornerShape(8.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    0.5.dp,
-                    if (isUnlocked) badgeColor else Color.Gray
-                )
+                color = if (isUnlocked) badgeColor.copy(alpha = 0.2f) else Color.DarkGray.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    if (isUnlocked) "کسب شده ✓" else "قفل",
+                    if (isUnlocked) "باز است ✓" else "قفل 🔒",
                     color = if (isUnlocked) badgeColor else Color.Gray,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -604,18 +737,21 @@ fun AchievementTile(
 
 @Composable
 fun MatchHistoryTilePersian(match: MatchEntity) {
-    val dateStr = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date(match.timestamp))
+    val dateFormat = SimpleDateFormat("yyyy/MM/dd - HH:mm", Locale.getDefault())
+    val dateStr = dateFormat.format(Date(match.timestamp))
+    val isWin = match.isWin
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color(0xFF121724))
+            .background(Color(0xFF131722))
             .border(
                 1.dp,
-                if (match.isWin) Color(0xFF00E676).copy(alpha = 0.35f) else Color(0xFFFF5252).copy(alpha = 0.35f),
+                if (isWin) Color(0xFF00E676).copy(alpha = 0.4f) else Color(0xFFFF5252).copy(alpha = 0.4f),
                 RoundedCornerShape(14.dp)
             )
-            .padding(12.dp)
+            .padding(14.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -626,48 +762,47 @@ fun MatchHistoryTilePersian(match: MatchEntity) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(if (match.isWin) Color(0xFF00E676).copy(alpha = 0.2f) else Color(0xFFFF5252).copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+                Surface(
+                    color = if (isWin) Color(0xFF00E676).copy(alpha = 0.2f) else Color(0xFFFF5252).copy(alpha = 0.2f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    Text(if (match.isWin) "🏆" else "💔", fontSize = 20.sp)
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(if (isWin) "🏆" else "💥", fontSize = 16.sp)
+                    }
                 }
 
                 Column {
-                    Text("نبرد با ${match.opponentName}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text("${match.boardName} • $dateStr", color = Color.Gray, fontSize = 10.sp)
+                    Text(
+                        text = if (isWin) "پیروزی در برابر ${match.opponentName}" else "شکست در برابر ${match.opponentName}",
+                        color = if (isWin) Color(0xFF00E676) else Color(0xFFFF5252),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(text = "شرط: ${match.bet} سکه • $dateStr", color = Color.Gray, fontSize = 10.sp)
                 }
             }
 
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = if (match.isWin) "+${(match.bet * 1.9).toLong()} سکه" else "-${match.bet} سکه",
-                    color = if (match.isWin) Color(0xFF00E676) else Color(0xFFFF5252),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 13.sp
-                )
-                Text(match.winType, color = Color(0xFFFFD700), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            }
+            Text(
+                text = if (isWin) "+${match.bet}" else "-${match.bet}",
+                color = if (isWin) Color(0xFFFFD700) else Color(0xFFFF5252),
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 14.sp
+            )
         }
     }
 }
 
 @Composable
-fun FriendItemTile(
-    friend: FriendEntity,
-    onChallenge: () -> Unit,
-    onSendGift: () -> Unit
-) {
+fun FriendRowCard(friend: FriendEntity) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color(0xFF131826))
+            .background(Color(0xFF131722))
             .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(14.dp))
-            .padding(12.dp)
+            .padding(14.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -678,105 +813,73 @@ fun FriendItemTile(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Box(contentAlignment = Alignment.BottomEnd) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF222C40)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(getAvatarEmoji(friend.avatarId), fontSize = 22.sp)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(if (friend.isOnline) Color(0xFF00E676) else Color.Gray)
-                            .border(1.dp, Color.Black, CircleShape)
-                    )
-                }
-
+                Text(getProfileAvatarEmoji(friend.avatarId), fontSize = 24.sp)
                 Column {
-                    Text(friend.friendName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text("سطح ${friend.level} • ${if (friend.isOnline) "آنلاین 🟢" else "آفلاین"}", color = Color.Gray, fontSize = 11.sp)
+                    Text(friend.friendName, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("سطح ${friend.level} • ${friend.coins / 1000}K سکه", color = Color(0xFFFFD700), fontSize = 11.sp)
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(
-                    onClick = onSendGift,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E283C)),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text("🎁 هدیه", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Button(
-                    onClick = onChallenge,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text("⚔️ چالش", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
+            Button(
+                onClick = {},
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
+            ) {
+                Text("چالش ⚔️", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-fun EditProfileDialogPersian(
+fun EditProfileDialog(
     currentName: String,
     currentAvatarId: Int,
     onDismiss: () -> Unit,
     onSave: (String, Int) -> Unit
 ) {
-    var name by remember { mutableStateOf(currentName) }
-    var selectedAvatar by remember { mutableStateOf(currentAvatarId) }
+    var nameInput by remember { mutableStateOf(currentName) }
+    var selectedAvatar by remember { mutableIntStateOf(currentAvatarId) }
+    val avatars = listOf(1, 2, 3, 4, 5, 6)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF121726),
-        title = {
-            Text(
-                "ویرایش مشخصات امپراتور",
-                color = Color(0xFFFFD700),
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-        },
+        containerColor = Color(0xFF121622),
+        title = { Text("ویرایش پروفایل امپراتور", color = Color(0xFFFFD700), fontSize = 16.sp) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("نام کاربری سلطنتی") },
+                    value = nameInput,
+                    onValueChange = { nameInput = it },
+                    label = { Text("نام نمایشی", color = Color.Gray) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
                         focusedBorderColor = Color(0xFFFFD700),
-                        unfocusedBorderColor = Color.Gray
-                    )
+                        unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 )
 
-                Text("انتخاب آواتار اژدها و درباری:", color = Color.Gray, fontSize = 12.sp)
+                Text("انتخاب آواتار سلطنتی:", color = Color.White, fontSize = 12.sp)
+
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    (1..6).forEach { id ->
+                    avatars.forEach { avId ->
+                        val isSelected = (selectedAvatar == avId)
                         Box(
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
-                                .background(if (selectedAvatar == id) Color(0xFFFFD700) else Color(0xFF1F263B))
-                                .border(1.5.dp, if (selectedAvatar == id) Color.White else Color.Transparent, CircleShape)
-                                .clickable { selectedAvatar = id },
+                                .background(if (isSelected) Color(0xFFFFD700).copy(alpha = 0.3f) else Color(0xFF1E2433))
+                                .border(2.dp, if (isSelected) Color(0xFFFFD700) else Color.Transparent, CircleShape)
+                                .clickable { selectedAvatar = avId },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(getAvatarEmoji(id), fontSize = 20.sp)
+                            Text(getProfileAvatarEmoji(avId), fontSize = 22.sp)
                         }
                     }
                 }
@@ -784,26 +887,38 @@ fun EditProfileDialogPersian(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    if (name.isNotBlank()) onSave(name, selectedAvatar)
-                },
+                onClick = { if (nameInput.isNotBlank()) onSave(nameInput, selectedAvatar) },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
             ) {
                 Text("ذخیره تغییرات", color = Color.Black, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("انصراف", color = Color.Gray) }
+            TextButton(onClick = onDismiss) {
+                Text("انصراف", color = Color.Gray)
+            }
         }
     )
 }
 
-fun getRankTitle(level: Int): String {
+fun getProfileRankTitle(level: Int): String {
     return when {
-        level >= 70 -> "👑 امپراتور اژدهای تخته"
-        level >= 50 -> "🦅 استاد بزرگ افسانه‌ای"
-        level >= 30 -> "⚔️ قهرمان دربار سلطنتی"
-        level >= 15 -> "❇️ استاد چیره‌دست تاس‌ها"
-        else -> "🎲 پیشگام تخته‌نرد"
+        level >= 90 -> "شاهنشاه بی‌رقیب 👑"
+        level >= 70 -> "امپراتور بزرگ اژدها 🐉"
+        level >= 50 -> "استاد اعظم شاهانه ⚜️"
+        level >= 30 -> "سردار نامدار ⚔️"
+        level >= 15 -> "شوالیه دلیر 🛡️"
+        else -> "نوآموز درباری 📜"
+    }
+}
+
+fun getProfileAvatarEmoji(avatarId: Int): String {
+    return when (avatarId) {
+        1 -> "👑"
+        2 -> "🦁"
+        3 -> "🦅"
+        4 -> "🐉"
+        5 -> "💎"
+        else -> "⚔️"
     }
 }
