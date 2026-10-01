@@ -93,7 +93,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val blackDie = (1..6).random()
                 _gameState.value = state.copy(openingRoll = Pair(whiteDie, blackDie))
                 
-                delay(1200) // let the opening dice roll animation complete on the board
+                delay(350) // Fast snappy opening roll animation
 
                 if (whiteDie > blackDie) {
                     _aiCommentary.value = "👑 شما برنده شدید ($whiteDie به $blackDie)! بازی با نوبت شما آغاز می‌شود."
@@ -109,7 +109,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     startTurnTimer()
                     val legalMoves = BackgammonRules.getLegalMoves(newState)
                     if (legalMoves.isEmpty()) {
-                        delay(1200)
+                        delay(300)
                         confirmTurn()
                     }
                 } else if (blackDie > whiteDie) {
@@ -127,7 +127,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     checkTurnAndTriggerAI()
                 } else {
                     _aiCommentary.value = "🤝 هر دو تاس $whiteDie آمدند! تاس مساوی است، لطفاً دوباره پرتاب کنید."
-                    delay(800)
+                    delay(250)
                     _gameState.value = _gameState.value?.copy(openingRoll = null)
                 }
             }
@@ -151,7 +151,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (legalMoves.isEmpty()) {
             viewModelScope.launch {
                 _aiCommentary.value = "❌ هیچ حرکتی با این تاس‌ها ممکن نیست! نوبت واگذار می‌شود..."
-                delay(1400)
+                delay(400)
                 confirmTurn()
             }
         } else {
@@ -295,7 +295,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // First tap: Select checker and highlight valid destination points
             val pt = if (pointIndex in 1..24) state.points[pointIndex] else PointState()
             if (pt.color == player && pt.count > 0) {
-                val legalForPoint = BackgammonRules.getLegalMoves(state).filter { it.from == pointIndex }
+                val allLegal = BackgammonRules.getLegalMoves(state)
+                val legalForPoint = allLegal.filter { it.from == pointIndex }
                 if (legalForPoint.isNotEmpty()) {
                     _gameState.value = state.copy(
                         selectedPoint = pointIndex,
@@ -322,7 +323,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Tapping another own checker -> Switch selection
                 val pt = if (pointIndex in 1..24) state.points[pointIndex] else PointState()
                 if (pt.color == player && pt.count > 0) {
-                    val legalForPoint = BackgammonRules.getLegalMoves(state).filter { it.from == pointIndex }
+                    val allLegal = BackgammonRules.getLegalMoves(state)
+                    val legalForPoint = allLegal.filter { it.from == pointIndex }
                     if (legalForPoint.isNotEmpty()) {
                         _gameState.value = state.copy(
                             selectedPoint = pointIndex,
@@ -358,15 +360,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun executeMove(move: Move) {
         val currentState = _gameState.value ?: return
+        if (currentState.isGameOver || currentState.isMatchOver) return
         undoStack.add(currentState)
 
         val nextState = BackgammonRules.applyMove(currentState, move)
-        _gameState.value = nextState
-
         if (nextState.isGameOver) {
             timerJob?.cancel()
-            handleGameOver(nextState)
+            val scoreUpdated = BackgammonRules.updateMatchScoreAfterGame(nextState)
+            _gameState.value = scoreUpdated
+            handleGameOver(scoreUpdated)
         } else {
+            _gameState.value = nextState
             val canStillMove = BackgammonRules.canMakeAnyMove(nextState)
             if (!canStillMove) {
                 _aiCommentary.value = "تمام حرکت‌ها انجام شد. دکمه تایید حرکت را بزنید یا حرکت را بازگردانید."
@@ -383,13 +387,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (isAiTurn) {
             aiTurnJob?.cancel()
             aiTurnJob = viewModelScope.launch {
-                delay(800)
+                delay(120)
                 val curState = _gameState.value ?: return@launch
 
                 // 1. Roll AI Dice if not rolled
                 if (curState.dice == null) {
                     rollDice()
-                    delay(1000)
+                    delay(200)
                 }
 
                 // 2. Play AI Moves in sequence
@@ -399,7 +403,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     if (aiMove != null) {
                         activeState = BackgammonRules.applyMove(activeState, aiMove)
                         _gameState.value = activeState
-                        delay(700)
+                        delay(160) // Fast, smooth animation
                     } else {
                         break
                     }
@@ -408,7 +412,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (activeState.isGameOver) {
                     handleGameOver(activeState)
                 } else {
-                    delay(500)
+                    delay(100)
                     confirmTurn()
                 }
             }

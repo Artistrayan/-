@@ -562,7 +562,7 @@ private fun PortraitGameLayout(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(vertical = 4.dp),
+                .padding(vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {
             BoardCanvas(
@@ -571,8 +571,8 @@ private fun PortraitGameLayout(
                 onPointClick = onPointClick,
                 onBarClick = onBarClick,
                 modifier = Modifier
-                    .fillMaxWidth(0.96f)
-                    .aspectRatio(1.45f)
+                    .fillMaxWidth(0.99f)
+                    .aspectRatio(1.32f)
             )
 
             if (state.dice != null || state.openingRoll != null) {
@@ -834,7 +834,7 @@ private fun LandscapeGameLayout(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(vertical = 2.dp),
+                .padding(vertical = 1.dp),
             contentAlignment = Alignment.Center
         ) {
             BoardCanvas(
@@ -844,7 +844,7 @@ private fun LandscapeGameLayout(
                 onBarClick = onBarClick,
                 modifier = Modifier
                     .fillMaxHeight()
-                    .aspectRatio(1.58f, matchHeightConstraintsFirst = true)
+                    .aspectRatio(1.74f, matchHeightConstraintsFirst = true)
             )
 
             if (state.dice != null || state.openingRoll != null) {
@@ -941,8 +941,8 @@ private fun GameBottomActionBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .clip(RoundedCornerShape(22.dp))
+            .height(48.dp)
+            .clip(RoundedCornerShape(20.dp))
             .background(
                 Brush.horizontalGradient(
                     listOf(Color(0xFF141926).copy(alpha = 0.95f), Color(0xFF0D101A).copy(alpha = 0.95f))
@@ -953,9 +953,9 @@ private fun GameBottomActionBar(
                 Brush.horizontalGradient(
                     listOf(Color(0xFFFFD700).copy(alpha = 0.6f), Color(0xFF00E5FF).copy(alpha = 0.6f))
                 ),
-                RoundedCornerShape(22.dp)
+                RoundedCornerShape(20.dp)
             )
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = 6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {

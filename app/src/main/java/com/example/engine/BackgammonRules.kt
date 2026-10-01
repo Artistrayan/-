@@ -267,31 +267,41 @@ object BackgammonRules {
     }
 
     /**
-     * Rules 2, 3, 9, 10: Exhaustive Legal Turn Sequences Generator
-     * 
-     * Computes all full legal sequences of moves for the entire turn.
-     * Enforces:
-     * - Must play maximum possible number of dice (2 out of 2, 4 out of 4, etc.)
-     * - If only 1 die out of 2 different dice can be played, MUST play the LARGER die!
+     * Rules 2, 3, 9, 10: High-Performance Exhaustive Legal Turn Sequences Generator
+     * Optimized for sub-millisecond execution on mobile devices.
      */
     fun getLegalSequences(state: GameState): List<List<Move>> {
-        if (state.dice == null || state.dice.remainingMoves.isEmpty() || state.isGameOver) {
-            return emptyList()
+        val dice = state.dice ?: return emptyList()
+        val remainingMoves = dice.remainingMoves
+        if (remainingMoves.isEmpty() || state.isGameOver) return emptyList()
+
+        // Fast-path: Only 1 die remaining
+        if (remainingMoves.size == 1) {
+            val candidates = getCandidateMoves(state)
+            return candidates.map { listOf(it) }
         }
 
         val allSequences = mutableListOf<List<Move>>()
+        val totalDiceCount = remainingMoves.size
 
         fun explore(currentState: GameState, currentPath: List<Move>) {
-            val candidateMoves = getCandidateMoves(currentState)
-            if (candidateMoves.isEmpty()) {
+            val candidates = getCandidateMoves(currentState)
+            if (candidates.isEmpty() || currentPath.size == totalDiceCount) {
                 if (currentPath.isNotEmpty()) {
                     allSequences.add(currentPath)
                 }
                 return
             }
 
-            for (move in candidateMoves) {
-                val nextState = applyMove(currentState, move)
+            // For doubles: unique target points to avoid combinatorial explosion
+            val movesToTry = if (dice.isDouble) {
+                candidates.distinctBy { it.from to it.to }
+            } else {
+                candidates
+            }
+
+            for (move in movesToTry) {
+                val nextState = applyMoveForSearch(currentState, move)
                 explore(nextState, currentPath + move)
             }
         }
@@ -305,8 +315,7 @@ object BackgammonRules {
         var validSequences = allSequences.filter { it.size == maxMoves }
 
         // 2. Larger Die Priority: If max moves is 1 and original roll was non-double with 2 dice available
-        val dice = state.dice
-        if (maxMoves == 1 && !dice.isDouble && dice.remainingMoves.size == 2) {
+        if (maxMoves == 1 && !dice.isDouble && remainingMoves.size == 2) {
             val maxDieValue = maxOf(dice.die1, dice.die2)
             val largerDieSequences = validSequences.filter { it.first().dieValue == maxDieValue }
             if (largerDieSequences.isNotEmpty()) {
@@ -315,6 +324,54 @@ object BackgammonRules {
         }
 
         return validSequences
+    }
+
+    /**
+     * Ultra-fast lightweight move applicator used exclusively inside the recursion tree.
+     * Skips pip counts, history lists, strings, and win evaluations.
+     */
+    private fun applyMoveForSearch(state: GameState, move: Move): GameState {
+        val player = state.currentTurn
+        val newPts = state.points.toMutableList()
+        var barW = state.barWhite
+        var barB = state.barBlack
+        var offW = state.offWhite
+        var offB = state.offBlack
+
+        if (move.from == BAR_WHITE_INDEX) {
+            barW--
+        } else if (move.from == BAR_BLACK_INDEX) {
+            barB--
+        } else {
+            val srcPt = newPts[move.from]
+            val newCount = srcPt.count - 1
+            newPts[move.from] = if (newCount <= 0) PointState() else srcPt.copy(count = newCount)
+        }
+
+        if (move.isBearOff) {
+            if (player == PlayerColor.WHITE) offW++ else offB++
+        } else {
+            val destPt = newPts[move.to]
+            if (destPt.color == player.opposite() && destPt.count == 1) {
+                if (player == PlayerColor.WHITE) barB++ else barW++
+                newPts[move.to] = PointState(player, 1)
+            } else {
+                newPts[move.to] = PointState(player, destPt.count + 1)
+            }
+        }
+
+        val remaining = state.dice?.remainingMoves?.toMutableList() ?: mutableListOf()
+        val idx = remaining.indexOf(move.dieValue)
+        if (idx != -1) remaining.removeAt(idx)
+
+        return state.copy(
+            points = newPts,
+            barWhite = barW,
+            barBlack = barB,
+            offWhite = offW,
+            offBlack = offB,
+            dice = state.dice?.copy(remainingMoves = remaining)
+        )
     }
 
     /**

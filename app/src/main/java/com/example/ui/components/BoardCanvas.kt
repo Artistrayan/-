@@ -50,37 +50,10 @@ fun BoardCanvas(
     val view = LocalView.current
     val textMeasurer = rememberTextMeasurer()
 
-    // Pulse animation for landing target highlights & dragon glow
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val highlightAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.45f,
-        targetValue = 0.98f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(650, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
-    )
-
-    val dragonAuraAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.28f,
-        targetValue = 0.65f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dragonAura"
-    )
-
-    val highlightGlowRadius by infiniteTransition.animateFloat(
-        initialValue = 2.5f,
-        targetValue = 7f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(650, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowRad"
-    )
+    // High performance static values (avoids 60fps continuous full-board redraws)
+    val highlightAlpha = 0.88f
+    val dragonAuraAlpha = 0.50f
+    val highlightGlowRadius = 5.5f
 
     Canvas(
         modifier = modifier
@@ -111,24 +84,24 @@ fun BoardCanvas(
         // ==========================================================
         // 1. BOARD FRAME & PLAYFIELD GEOMETRY
         // ==========================================================
-        val frameMarginX = w * 0.008f
-        val frameMarginY = h * 0.008f
+        val frameMarginX = w * 0.003f
+        val frameMarginY = h * 0.003f
         val frameW = w - (frameMarginX * 2)
         val frameH = h - (frameMarginY * 2)
 
-        val frameBorderThickness = min(frameW * 0.034f, frameH * 0.060f)
+        val frameBorderThickness = min(frameW * 0.026f, frameH * 0.046f)
         val innerPlayX = frameMarginX + frameBorderThickness
         val innerPlayY = frameMarginY + frameBorderThickness
         val innerPlayW = frameW - (frameBorderThickness * 2)
         val innerPlayH = frameH - (frameBorderThickness * 2)
 
         // Side Bear-off Tray width on right
-        val bearOffTrayW = innerPlayW * 0.075f
+        val bearOffTrayW = innerPlayW * 0.070f
         val playableAreaW = innerPlayW - bearOffTrayW
-        val barW = playableAreaW * 0.082f
+        val barW = playableAreaW * 0.078f
         val halfPlayW = (playableAreaW - barW) / 2f
         val pointW = halfPlayW / 6f
-        val pointH = innerPlayH * 0.425f
+        val pointH = innerPlayH * 0.445f
 
         val leftQuadX = innerPlayX
         val barX = leftQuadX + halfPlayW
@@ -287,7 +260,7 @@ fun BoardCanvas(
         // ==========================================================
         // 7. 3D DRAGON CHECKERS (OBSIDIAN CYAN & 24K POLISHED GOLD)
         // ==========================================================
-        val checkerRadius = max(6f, min(pointW * 0.45f, (pointH / 5.2f) * 0.48f))
+        val checkerRadius = max(7f, min(pointW * 0.47f, (pointH / 5.0f) * 0.49f))
 
         for (ptIdx in 1..24) {
             val ptState = state.points[ptIdx]
